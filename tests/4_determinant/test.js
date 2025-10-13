@@ -1,5 +1,7 @@
 export default {
   prompt: `
+// Your goal is to write a production-ready and maintainable JavaScript function. Apply code-golfing practices without sacrificing readability by putting everything on one line. Do not include any comments in your code.
+//
 // Write an async JavaScript function 'calculateDeterminant' that calculates the determinant of a square matrix.
 // - The function must accept an n x n matrix, represented as an array of arrays.
 // - You MUST use a dynamic import() to load the 'mathjs' library from a CDN.
