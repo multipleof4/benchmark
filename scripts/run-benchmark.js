@@ -9,12 +9,12 @@ const README_PATH = path.join(CWD, 'README');
 const TESTS_DIR = path.join(CWD, 'tests');
 const RESULTS_PATH = path.join(CWD, 'results.json');
 
-const getLlmCode = async (prompt, model, functionName) => {
+const getLlmCode = async (prompt, model, functionName, temperature) => {
   const start = performance.now();
   try {
     const res = await axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
-      { model, messages: [{ role: 'user', content: prompt }] },
+      { model, messages: [{ role: 'user', content: prompt }], ...(temperature !== undefined && { temperature }) },
       { headers: { Authorization: `Bearer ${process.env.OPENROUTER_KEY}` } }
     );
     const duration = (performance.now() - start) / 1000;
@@ -43,19 +43,27 @@ const main = async () => {
   const testsToRun = allTestDirs.slice(0, Math.ceil(allTestDirs.length * (percentage / 100)));
   const genData = {};
 
-  for (const model of models) {
-    genData[model] = {};
+  for (const modelSpec of models) {
+    const [model, tempStr] = modelSpec.split(' TEMP:');
+    const temperature = tempStr ? parseFloat(tempStr) : undefined;
+
+    genData[modelSpec] = {};
     for (const dir of testsToRun) {
       const { prompt, functionName } = (await import(pathToFileURL(path.join(TESTS_DIR, dir, 'test.js')))).default;
-      console.log(`Generating ${dir} for ${model}...`);
-      const result = await getLlmCode(`${sharedPrompt}\n\n${prompt.trim()}`, model, functionName);
+      console.log(`Generating ${dir} for ${modelSpec}...`);
+      const result = await getLlmCode(
+        `${sharedPrompt}\n\n${prompt.trim()}`,
+        model,
+        functionName,
+        temperature
+      );
       
-      genData[model][dir] = result?.duration ?? null;
+      genData[modelSpec][dir] = result?.duration ?? null;
       if (!result) continue;
 
       const outDir = path.join(TESTS_DIR, dir, 'outputs');
       await fs.mkdir(outDir, { recursive: true });
-      const fname = `${model.replace(/[\/:]/g, '_')}.js`;
+      const fname = `${modelSpec.replace(/[\/:]/g, '_')}.js`;
       await fs.writeFile(path.join(outDir, fname), result.code);
     }
   }
