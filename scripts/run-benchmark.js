@@ -5,7 +5,7 @@ import axios from 'axios';
 import { performance } from 'perf_hooks';
 
 const CWD = process.cwd();
-const README_PATH = path.join(CWD, 'README.md');
+const README_PATH = path.join(CWD, 'README');
 const TESTS_DIR = path.join(CWD, 'tests');
 const RESULTS_PATH = path.join(CWD, 'results.json');
 
