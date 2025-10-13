@@ -1,11 +1,44 @@
 {
   "google/gemini-2.5-pro": {
-    "1_dijkstra": 68.831806591
+    "1_dijkstra": 37.563614472,
+    "2_convex_hull": 30.02974868399999,
+    "3_lis": 42.240308332,
+    "4_determinant": 13.347867265000009
+  },
+  "google/gemini-2.5-pro TEMP:0.7": {
+    "1_dijkstra": 57.442001282000014,
+    "2_convex_hull": 94.02301281699998,
+    "3_lis": 11.979348513000005,
+    "4_determinant": 12.74124894999998
+  },
+  "google/gemini-2.5-pro TEMP:0.4": {
+    "1_dijkstra": 47.84090968399995,
+    "2_convex_hull": 42.86752973399998,
+    "3_lis": 27.62078084000002,
+    "4_determinant": 8.960109082999988
   },
   "anthropic/claude-sonnet-4.5": {
-    "1_dijkstra": 5.513186071999997
+    "1_dijkstra": 13.460692856000039,
+    "2_convex_hull": 5.613852328000008,
+    "3_lis": 2.8292644480000018,
+    "4_determinant": 3.0375356369999937
+  },
+  "anthropic/claude-sonnet-4.5 TEMP:0.7": {
+    "1_dijkstra": 5.0235283530000014,
+    "2_convex_hull": 5.469308726000017,
+    "3_lis": 2.9667647899999867,
+    "4_determinant": 6.369721143000002
+  },
+  "anthropic/claude-sonnet-4.5 TEMP:0.4": {
+    "1_dijkstra": null,
+    "2_convex_hull": 6.095885308999976,
+    "3_lis": 3.749924349999987,
+    "4_determinant": 12.665039036000032
   },
   "openai/gpt-5-codex": {
-    "1_dijkstra": 126.619165211
+    "1_dijkstra": 97.35094948799996,
+    "2_convex_hull": 145.25300972899993,
+    "3_lis": 53.988241607000006,
+    "4_determinant": 6.342495287999976
   }
 }

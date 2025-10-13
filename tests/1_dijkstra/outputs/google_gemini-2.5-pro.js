@@ -1,2 +1,32 @@
-const findShortestPath = async (graph, start, end) => (async () => { const { default: PQ } = await import('https://cdn.jsdelivr.net/npm/js-priority-queue@0.1.5/priority-queue.min.js'); const dists = Object.fromEntries(Object.keys(graph).map(k => [k, Infinity])), pq = new PQ({ comparator: (a, b) => a[1] - b[1] }); dists[start] = 0; pq.queue([start, 0]); while (pq.length) { const [node] = pq.dequeue(); if (node === end) break; for (const [neighbor, weight] of Object.entries(graph[node] || {})) { const newDist = dists[node] + weight; if (newDist < dists[neighbor]) { dists[neighbor] = newDist; pq.queue([neighbor, newDist]); } } } return dists[end]; })();
+const findShortestPath = async (graph, start, end) => {
+  const { default: PriorityQueue } = await import('https://cdn.jsdelivr.net/npm/js-priority-queue@0.1.5/priority-queue.min.js');
+
+  const dist = { [start]: 0 };
+  const pq = new PriorityQueue({ comparator: (a, b) => a.weight - b.weight });
+
+  pq.enqueue({ node: start, weight: 0 });
+
+  while (pq.length) {
+    const { node: u, weight: uWeight } = pq.dequeue();
+
+    if (uWeight > (dist[u] ?? Infinity)) {
+      continue;
+    }
+
+    if (u === end) {
+      return uWeight;
+    }
+
+    for (const v in graph[u] || {}) {
+      const newWeight = uWeight + graph[u][v];
+
+      if (newWeight < (dist[v] ?? Infinity)) {
+        dist[v] = newWeight;
+        pq.enqueue({ node: v, weight: newWeight });
+      }
+    }
+  }
+
+  return Infinity;
+};
 export default findShortestPath;
