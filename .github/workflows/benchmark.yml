@@ -2,9 +2,6 @@ name: Run LLM Benchmark
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 8 * * 1' # Run every Monday at 8 AM UTC
-
 jobs:
   benchmark:
     runs-on: ubuntu-latest
