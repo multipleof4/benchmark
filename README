@@ -24,24 +24,6 @@ openai/gpt-5-codex
 
 ## Benchmark Results
 
-The list below shows the pass/fail status and execution time for each model on each test.
+Live benchmark results, including pass/fail status and code generation time, are available on our [results page](https://multipleof4.github.io/benchmark/).
 
-<!-- RESULTS_START -->
-**google/gemini-2.5-pro**
-- 1_dijkstra: ❌ Fail (0.037s)
-- 2_convex_hull: ⚪ Not Run
-- 3_lis: ⚪ Not Run
-- 4_determinant: ⚪ Not Run
-
-**anthropic/claude-sonnet-4.5**
-- 1_dijkstra: ❌ Fail (0.035s)
-- 2_convex_hull: ⚪ Not Run
-- 3_lis: ⚪ Not Run
-- 4_determinant: ⚪ Not Run
-
-**openai/gpt-5-codex**
-- 1_dijkstra: ❌ Fail (0.033s)
-- 2_convex_hull: ⚪ Not Run
-- 3_lis: ⚪ Not Run
-- 4_determinant: ⚪ Not Run
-<!-- RESULTS_END -->
+The results are updated automatically via GitHub Actions.
