@@ -19,6 +19,11 @@ openai/gpt-5-codex
 The table below shows the pass/fail status for each model on each test.
 
 <!-- RESULTS_START -->
-*No results yet. Run the benchmark workflow to generate them.*
+| Model | 1_dijkstra | 2_convex_hull | 3_lis | 4_determinant |
+| --- | --- | --- | --- | --- |
+| google/gemini-2.5-pro | ❌ Fail | ❌ Fail | ❌ Fail | ❌ Fail |
+| anthropic/claude-sonnet-4.5 | ❌ Fail | ❌ Fail | ❌ Fail | ❌ Fail |
+| openai/gpt-5-codex | ❌ Fail | ❌ Fail | ❌ Fail | ❌ Fail |
+
 <!-- RESULTS_END -->
 
