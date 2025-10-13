@@ -58,9 +58,13 @@
           
           let itemHTML;
           try {
-            const tMod = await import(`./tests/${test}/test.js`);
-            const lMod = await import(`./tests/${test}/outputs/${sModel}.js`);
-            await tMod.default.runTest(lMod.default);
+            const testPromise = (async () => {
+              const tMod = await import(`./tests/${test}/test.js`);
+              const lMod = await import(`./tests/${test}/outputs/${sModel}.js`);
+              await tMod.default.runTest(lMod.default);
+            })();
+            const timeout = new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 5000));
+            await Promise.race([testPromise, timeout]);
             itemHTML = `✅ <span class="font-medium text-gray-800">${test}</span>`;
           } catch (e) {
             console.error(`${model} - ${test}: `, e);
