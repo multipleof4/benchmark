@@ -33,7 +33,7 @@
     updatedEl.dateTime = now.toISOString().split('T')[0];
 
     const run = async () => {
-      const readme = await fetch('./README.md').then(r => r.text());
+      const readme = await fetch('./README').then(r => r.text());
       const genTimes = await fetch('./results.json').then(r => r.json());
       const models = readme.match(/<!-- MODELS_START -->\n([\s\S]+?)\n<!-- MODELS_END -->/)[1].trim().split('\n');
       const tests = ['1_dijkstra', '2_convex_hull', '3_lis', '4_determinant'];
