@@ -8,7 +8,7 @@ import { performance } from 'perf_hooks';
 
 const execPromise = promisify(exec);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const README_PATH = path.join(__dirname, '..', 'README');
+const README_PATH = path.join(__dirname, '..', 'README.md');
 const TESTS_DIR = path.join(__dirname, '..', 'tests');
 const TEMP_FILE = path.join(__dirname, 'temp_test.js');
 
@@ -47,7 +47,14 @@ const main = async () => {
   const models = readme.match(/<!-- MODELS_START -->\n([\s\S]+?)\n<!-- MODELS_END -->/)[1].trim().split('\n');
   const percentage = parseInt(readme.match(/RUN_PERCENTAGE:\s*(\d+)/)?.[1] ?? '100', 10);
   const allTestDirs = (await fs.readdir(TESTS_DIR, { withFileTypes: true }))
-    .filter(d => d.isDirectory()).map(d => d.name).sort();
+    .filter(d => d.isDirectory()).map(d => d.name);
+
+  console.log('Clearing old test outputs...');
+  await Promise.all(allTestDirs.map(dir => 
+    fs.rm(path.join(TESTS_DIR, dir, 'outputs'), { recursive: true, force: true })
+  ));
+
+  allTestDirs.sort();
   const testsToRun = allTestDirs.slice(0, Math.ceil(allTestDirs.length * (percentage / 100)));
 
   const results = [];
@@ -59,15 +66,15 @@ const main = async () => {
         continue;
       }
       const testModule = await import(pathToFileURL(path.join(TESTS_DIR, dir, 'test.js')));
-      const { prompt, harness } = testModule.default;
+      const { prompt, imports, harness } = testModule.default;
       console.log(`Running ${dir} for ${model}...`);
       const llmCode = await getLlmCode(prompt, model);
       if (llmCode) {
         const outDir = path.join(TESTS_DIR, dir, 'outputs');
         await fs.mkdir(outDir, { recursive: true });
-        const fname = `${model.replace(/[\/:]/g, '_')}_${new Date().toISOString().replace(/:/g, '-')}.js`;
+        const fname = `${model.replace(/[\/:]/g, '_')}.js`;
         await fs.writeFile(path.join(outDir, fname), llmCode);
-        const { passed, duration } = await runTest(`${llmCode}\n${harness}`);
+        const { passed, duration } = await runTest(`${imports || ''}\n${llmCode}\n${harness}`);
         results.push(`- ${dir}: ${passed ? '✅ Pass' : '❌ Fail'} (${duration.toFixed(3)}s)`);
       } else {
         results.push(`- ${dir}: ❌ API Error`);
