@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lynchmark – LLM Benchmark</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+    .mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <main class="max-w-2xl mx-auto flex flex-col min-h-screen p-6 lg:p-8">
+    <header class="text-center mb-10">
+      <div class="relative inline-block">
+        <h1 class="text-4xl font-bold text-gray-900 mb-2">Lynchmark</h1>
+        <span class="mono pointer-events-none absolute -top-2 -right-3 inline-flex items-center rounded-full border border-green-200 bg-green-50 text-green-700 text-[10px] leading-none font-medium px-1.5 py-0.5 shadow-sm">
+          Last updated <time class="ml-1" datetime="2025-10">Oct 2025</time>
+        </span>
+      </div>
+      <p class="text-base text-gray-600 max-w-lg mx-auto">Just another LLM benchmark.</p>
+    </header>
+
+    <div class="flex flex-col gap-6 flex-grow">
+      <section class="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div class="bg-gray-50 px-5 py-3 border-b border-gray-200">
+          <p class="text-sm text-gray-700 font-medium">The only correct ranking of publicly available LLMs</p>
+        </div>
+        <div class="p-4">
+          <ul class="space-y-3">
+            <li class="flex items-center p-3 rounded-lg border bg-white">
+              <span class="mono text-gray-500 font-semibold w-7 shrink-0">1.</span>
+              <span class="font-semibold ml-3">Gemini 2.5 Pro</span>
+              <span class="mono text-sm text-gray-500 ml-auto">~77tps</span>
+            </li>
+            <li class="flex items-center p-3 rounded-lg border bg-white">
+              <span class="mono text-gray-500 font-semibold w-7 shrink-0">2.</span>
+              <span class="font-semibold ml-3">Claude Sonnet 4.5</span>
+              <span class="mono text-sm text-gray-500 ml-auto">~58tps</span>
+            </li>
+            <li class="flex items-center p-3 rounded-lg border bg-white">
+              <span class="mono text-gray-500 font-semibold w-7 shrink-0">3.</span>
+              <span class="font-semibold ml-3">GPT-5 Codex</span>
+              <span class="mono text-sm text-gray-500 ml-auto">~37tps</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div class="bg-gray-50 px-5 py-3 border-b border-gray-200">
+          <p class="text-sm text-gray-700 font-medium">Non-coding</p>
+        </div>
+        <div class="p-4">
+          <ul class="space-y-3">
+            <li class="flex items-center p-3 rounded-lg border bg-white">
+              <span class="mono text-gray-500 font-semibold w-7 shrink-0">1.</span>
+              <span class="font-semibold ml-3">Kimi K2</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
