@@ -1,14 +1,16 @@
-const fs = require('fs').promises;
-const path = require('path');
-const axios = require('axios');
-const { exec } = require('child_process');
-const util = require('util');
-const { performance } = require('perf_hooks');
+import { promises as fs } from 'fs';
+import path from 'path';
+import { fileURLToPath, pathToFileURL } from 'url';
+import axios from 'axios';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { performance } from 'perf_hooks';
 
-const execPromise = util.promisify(exec);
+const execPromise = promisify(exec);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const README_PATH = path.join(__dirname, '..', 'README');
 const TESTS_DIR = path.join(__dirname, '..', 'tests');
-const TEMP_FILE = path.join(__dirname, 'temp_test.mjs');
+const TEMP_FILE = path.join(__dirname, 'temp_test.js');
 
 const getLlmCode = async (prompt, model) => {
   try {
@@ -18,7 +20,8 @@ const getLlmCode = async (prompt, model) => {
       { headers: { Authorization: `Bearer ${process.env.OPENROUTER_KEY}` } }
     );
     const content = res.data.choices[0].message.content;
-    return content.match(/```(?:javascript|js)?\n([\s\S]+?)\n```/)?.[1].trim() ?? content.trim();
+    const code = content.match(/```(?:javascript|js)?\n([\s\S]+?)\n```/)?.[1].trim() ?? content.trim();
+    return code.replace(/^export\s+(default\s+)?/, '');
   } catch (error) {
     console.error(`API Error for ${model}: ${error.message}`);
     return null;
@@ -55,7 +58,8 @@ const main = async () => {
         results.push(`- ${dir}: ⚪ Not Run`);
         continue;
       }
-      const { prompt, harness } = require(path.join(TESTS_DIR, dir, 'test.js'));
+      const testModule = await import(pathToFileURL(path.join(TESTS_DIR, dir, 'test.js')));
+      const { prompt, harness } = testModule.default;
       console.log(`Running ${dir} for ${model}...`);
       const llmCode = await getLlmCode(prompt, model);
       if (llmCode) {
