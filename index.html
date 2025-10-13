@@ -33,7 +33,8 @@
     updatedEl.dateTime = now.toISOString().split('T')[0];
 
     const run = async () => {
-      const readme = await fetch('./README').then(r => r.text());
+      const readme = await fetch('./README.md').then(r => r.text());
+      const genTimes = await fetch('./results.json').then(r => r.json());
       const models = readme.match(/<!-- MODELS_START -->\n([\s\S]+?)\n<!-- MODELS_END -->/)[1].trim().split('\n');
       const tests = ['1_dijkstra', '2_convex_hull', '3_lis', '4_determinant'];
       
@@ -50,7 +51,6 @@
         const list = document.getElementById(`list-${sModel}`);
 
         for (const test of tests) {
-          const s = performance.now();
           let itemHTML;
           try {
             const tMod = await import(`./tests/${test}/test.js`);
@@ -61,8 +61,8 @@
             console.error(`${model} - ${test}: `, e);
             itemHTML = `❌ <span class="font-medium text-gray-800">${test}</span>`;
           }
-          const d = ((performance.now() - s) / 1000).toFixed(3);
-          list.innerHTML += `<li class="flex items-center gap-3 text-sm">${itemHTML}<span class="mono text-gray-500 ml-auto">${d}s</span></li>`;
+          const time = genTimes[model]?.[test]?.toFixed(3) ?? 'N/A';
+          list.innerHTML += `<li class="flex items-center gap-3 text-sm">${itemHTML}<span class="mono text-gray-500 ml-auto">${time}s</span></li>`;
         }
       }
     };
