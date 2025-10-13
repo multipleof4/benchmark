@@ -8,7 +8,7 @@ import { performance } from 'perf_hooks';
 
 const execPromise = promisify(exec);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const README_PATH = path.join(__dirname, '..', 'README');
+const README_PATH = path.join(__dirname, '..', 'README.md');
 const TESTS_DIR = path.join(__dirname, '..', 'tests');
 const TEMP_FILE = path.join(__dirname, 'temp_test.js');
 
@@ -48,6 +48,11 @@ const main = async () => {
   const percentage = parseInt(readme.match(/RUN_PERCENTAGE:\s*(\d+)/)?.[1] ?? '100', 10);
   const allTestDirs = (await fs.readdir(TESTS_DIR, { withFileTypes: true }))
     .filter(d => d.isDirectory()).map(d => d.name).sort();
+
+  await Promise.all(
+    allTestDirs.map(dir => fs.rm(path.join(TESTS_DIR, dir, 'outputs'), { recursive: true, force: true }))
+  );
+
   const testsToRun = allTestDirs.slice(0, Math.ceil(allTestDirs.length * (percentage / 100)));
 
   const results = [];
@@ -85,4 +90,3 @@ const main = async () => {
 };
 
 main().catch(console.error);
-
