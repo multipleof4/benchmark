@@ -5,7 +5,7 @@ const { exec } = require('child_process');
 const util = require('util');
 
 const execPromise = util.promisify(exec);
-const README_PATH = path.join(__dirname, '..', 'README.md');
+const README_PATH = path.join(__dirname, '..', 'README');
 const TESTS_DIR = path.join(__dirname, '..', 'tests');
 const TEMP_FILE = path.join(__dirname, 'temp_test.mjs');
 
@@ -17,8 +17,7 @@ const getLlmCode = async (prompt, model) => {
       { headers: { Authorization: `Bearer ${process.env.OPENROUTER_KEY}` } }
     );
     const content = res.data.choices[0].message.content;
-    const match = content.match(/```(?:javascript|js)?\n([\s\S]+?)\n```/);
-    return match ? match[1].trim() : content.trim();
+    return content.match(/```(?:javascript|js)?\n([\s\S]+?)\n```/)?.[1].trim() ?? content.trim();
   } catch (error) {
     console.error(`API Error for ${model}: ${error.message}`);
     return null;
@@ -27,7 +26,7 @@ const getLlmCode = async (prompt, model) => {
 
 const runTest = async (code) => {
   try {
-    await fs.writeFile(TEMP_FILE, code, 'utf-8');
+    await fs.writeFile(TEMP_FILE, code);
     await execPromise(`node ${TEMP_FILE}`);
     return true;
   } catch (error) {
@@ -40,22 +39,39 @@ const runTest = async (code) => {
 const main = async () => {
   const readme = await fs.readFile(README_PATH, 'utf-8');
   const models = readme.match(/<!-- MODELS_START -->\n([\s\S]+?)\n<!-- MODELS_END -->/)[1].trim().split('\n');
-  const testFiles = (await fs.readdir(TESTS_DIR)).sort();
+  const percentage = parseInt(readme.match(/RUN_PERCENTAGE:\s*(\d+)/)?.[1] ?? '100', 10);
+  
+  const allTestDirs = (await fs.readdir(TESTS_DIR, { withFileTypes: true }))
+    .filter(d => d.isDirectory()).map(d => d.name).sort();
+  
+  const testsToRun = allTestDirs.slice(0, Math.ceil(allTestDirs.length * (percentage / 100)));
 
-  let resultsTable = '| Model | ' + testFiles.map(f => f.replace('.js','')).join(' | ') + ' |\n';
-  resultsTable += '|' + ' --- |'.repeat(testFiles.length + 1) + '\n';
+  let resultsTable = '| Model | ' + allTestDirs.join(' | ') + ' |\n';
+  resultsTable += '|' + ' --- |'.repeat(allTestDirs.length + 1) + '\n';
 
   for (const model of models) {
     resultsTable += `| ${model} |`;
-    for (const file of testFiles) {
-      const { prompt, harness } = require(path.join(TESTS_DIR, file));
-      console.log(`Running ${file} for ${model}...`);
+    for (const dir of allTestDirs) {
+      if (!testsToRun.includes(dir)) {
+        resultsTable += ' ⚪ Not Run |';
+        continue;
+      }
+      
+      const { prompt, harness } = require(path.join(TESTS_DIR, dir, 'test.js'));
+      console.log(`Running ${dir} for ${model}...`);
       const llmCode = await getLlmCode(prompt, model);
+      
       if (!llmCode) {
         resultsTable += ' ❌ API Error |';
         continue;
       }
-      const passed = await runTest(llmCode + '\n' + harness);
+
+      const outDir = path.join(TESTS_DIR, dir, 'outputs');
+      await fs.mkdir(outDir, { recursive: true });
+      const fname = `${model.replace(/[\/:]/g, '_')}_${new Date().toISOString().replace(/:/g, '-')}.js`;
+      await fs.writeFile(path.join(outDir, fname), llmCode);
+      
+      const passed = await runTest(`${llmCode}\n${harness}`);
       resultsTable += ` ${passed ? '✅ Pass' : '❌ Fail'} |`;
     }
     resultsTable += '\n';
@@ -65,7 +81,7 @@ const main = async () => {
     /<!-- RESULTS_START -->[\s\S]*<!-- RESULTS_END -->/,
     `<!-- RESULTS_START -->\n${resultsTable}\n<!-- RESULTS_END -->`
   );
-  await fs.writeFile(README_PATH, newReadme, 'utf-8');
+  await fs.writeFile(README_PATH, newReadme);
   console.log('Benchmark complete. README updated.');
 };
 
