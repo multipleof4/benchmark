@@ -9,7 +9,7 @@ The tests are run automatically via GitHub Actions, and the results are updated 
 Set the percentage of tests to run during the benchmark. 100% runs all tests.
 
 <!-- CONFIG_START -->
-RUN_PERCENTAGE: 100
+RUN_PERCENTAGE: 25
 <!-- CONFIG_END -->
 
 ## Models Under Test
