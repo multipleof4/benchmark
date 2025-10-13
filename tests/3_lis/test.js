@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   prompt: `
 // Write an async JavaScript function 'findLISLength' that finds the length of the Longest Increasing Subsequence (LIS) in an array of numbers.
 // - The function must accept an array of numbers.
@@ -7,7 +7,7 @@ module.exports = {
 // - The function should return a single number: the length of the LIS.
 `,
   harness: `
-const assert = require('assert');
+import assert from 'assert';
 async function runTest() {
   const nums = [10, 9, 2, 5, 3, 7, 101, 18, 4, 6];
   try {
