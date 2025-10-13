@@ -1,4 +1,5 @@
 export default {
+  functionName: 'calculateDeterminant',
   prompt: `
 // Your goal is to write a production-ready and maintainable JavaScript function. Apply code-golfing practices without sacrificing readability by putting everything on one line. Do not include any comments in your code.
 //
@@ -8,20 +9,12 @@ export default {
 // - You MUST use the library's built-in 'det' function to perform the calculation.
 // - The function should return the determinant value.
 `,
-  harness: `
-import assert from 'assert';
-async function runTest() {
-  const matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
-  try {
+  runTest: async (calculateDeterminant) => {
+    const assert = {
+      strictEqual: (a, e, m) => { if (a !== e) throw new Error(m || `FAIL: ${a} !== ${e}`) },
+    };
+    const matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
     const det = await calculateDeterminant(matrix);
-    assert.strictEqual(det, 0, "Test Failed: Determinant of [[1,2,3],[4,5,6],[7,8,9]] should be 0.");
-    console.log("Test Passed!");
-    process.exit(0);
-  } catch (e) {
-    console.error("Test Execution Error:", e.message);
-    process.exit(1);
+    assert.strictEqual(det, 0, "Test Failed: Determinant should be 0.");
   }
-}
-runTest();
-`
 };
