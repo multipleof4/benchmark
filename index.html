@@ -16,52 +16,57 @@
       <div class="relative inline-block">
         <h1 class="text-4xl font-bold text-gray-900 mb-2">Lynchmark</h1>
         <span class="mono pointer-events-none absolute -top-2 -right-3 inline-flex items-center rounded-full border border-green-200 bg-green-50 text-green-700 text-[10px] leading-none font-medium px-1.5 py-0.5 shadow-sm">
-          Last updated <time class="ml-1" datetime="2025-10">Oct 2025</time>
+          Last updated <time id="last-updated" class="ml-1"></time>
         </span>
       </div>
-      <p class="text-base text-gray-600 max-w-lg mx-auto">Just another LLM benchmark.</p>
+      <p class="text-base text-gray-600 max-w-lg mx-auto">An evolving benchmark for algorithmic code generation.</p>
     </header>
 
-    <div class="flex flex-col gap-6 flex-grow">
-      <section class="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-        <div class="bg-gray-50 px-5 py-3 border-b border-gray-200">
-          <p class="text-sm text-gray-700 font-medium">The only correct ranking of publicly available LLMs</p>
-        </div>
-        <div class="p-4">
-          <ul class="space-y-3">
-            <li class="flex items-center p-3 rounded-lg border bg-white">
-              <span class="mono text-gray-500 font-semibold w-7 shrink-0">1.</span>
-              <span class="font-semibold ml-3">Gemini 2.5 Pro</span>
-              <span class="mono text-sm text-gray-500 ml-auto">~77tps</span>
-            </li>
-            <li class="flex items-center p-3 rounded-lg border bg-white">
-              <span class="mono text-gray-500 font-semibold w-7 shrink-0">2.</span>
-              <span class="font-semibold ml-3">Claude Sonnet 4.5</span>
-              <span class="mono text-sm text-gray-500 ml-auto">~58tps</span>
-            </li>
-            <li class="flex items-center p-3 rounded-lg border bg-white">
-              <span class="mono text-gray-500 font-semibold w-7 shrink-0">3.</span>
-              <span class="font-semibold ml-3">GPT-5 Codex</span>
-              <span class="mono text-sm text-gray-500 ml-auto">~37tps</span>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <section class="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-        <div class="bg-gray-50 px-5 py-3 border-b border-gray-200">
-          <p class="text-sm text-gray-700 font-medium">Non-coding</p>
-        </div>
-        <div class="p-4">
-          <ul class="space-y-3">
-            <li class="flex items-center p-3 rounded-lg border bg-white">
-              <span class="mono text-gray-500 font-semibold w-7 shrink-0">1.</span>
-              <span class="font-semibold ml-3">Kimi K2</span>
-            </li>
-          </ul>
-        </div>
-      </section>
+    <div id="results-container" class="flex flex-col gap-6 flex-grow">
     </div>
   </main>
+  <script type="module">
+    const container = document.getElementById('results-container');
+    const updatedEl = document.getElementById('last-updated');
+    const now = new Date();
+    updatedEl.textContent = now.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    updatedEl.dateTime = now.toISOString().split('T')[0];
+
+    const run = async () => {
+      const readme = await fetch('./README').then(r => r.text());
+      const models = readme.match(/<!-- MODELS_START -->\n([\s\S]+?)\n<!-- MODELS_END -->/)[1].trim().split('\n');
+      const tests = ['1_dijkstra', '2_convex_hull', '3_lis', '4_determinant'];
+      
+      for (const model of models) {
+        const sModel = model.replace(/[\/:]/g, '_');
+        const card = document.createElement('section');
+        card.className = 'rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden';
+        card.innerHTML = `
+          <div class="bg-gray-50 px-5 py-3 border-b border-gray-200">
+            <p class="mono text-sm text-gray-700 font-medium">${model}</p>
+          </div>
+          <ul class="p-4 space-y-2" id="list-${sModel}"></ul>`;
+        container.appendChild(card);
+        const list = document.getElementById(`list-${sModel}`);
+
+        for (const test of tests) {
+          const s = performance.now();
+          let itemHTML;
+          try {
+            const tMod = await import(`./tests/${test}/test.js`);
+            const lMod = await import(`./tests/${test}/outputs/${sModel}.js`);
+            await tMod.default.runTest(lMod.default);
+            itemHTML = `✅ <span class="font-medium text-gray-800">${test}</span>`;
+          } catch (e) {
+            console.error(`${model} - ${test}: `, e);
+            itemHTML = `❌ <span class="font-medium text-gray-800">${test}</span>`;
+          }
+          const d = ((performance.now() - s) / 1000).toFixed(3);
+          list.innerHTML += `<li class="flex items-center gap-3 text-sm">${itemHTML}<span class="mono text-gray-500 ml-auto">${d}s</span></li>`;
+        }
+      }
+    };
+    run();
+  </script>
 </body>
 </html>
