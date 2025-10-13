@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   prompt: `
 // Write an async JavaScript function 'calculateDeterminant' that calculates the determinant of a square matrix.
 // - The function must accept an n x n matrix, represented as an array of arrays.
@@ -7,7 +7,7 @@ module.exports = {
 // - The function should return the determinant value.
 `,
   harness: `
-const assert = require('assert');
+import assert from 'assert';
 async function runTest() {
   const matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
   try {
