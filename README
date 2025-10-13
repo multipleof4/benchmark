@@ -24,12 +24,24 @@ openai/gpt-5-codex
 
 ## Benchmark Results
 
-The table below shows the pass/fail status for each model on each test.
+The list below shows the pass/fail status and execution time for each model on each test.
 
 <!-- RESULTS_START -->
-    Model                       | 1_dijkstra | 2_convex_hull | 3_lis     | 4_determinant
-    --------------------------- | ---------- | ------------- | --------- | -------------
-    google/gemini-2.5-pro       | ❌ Fail     | ⚪ Not Run     | ⚪ Not Run | ⚪ Not Run    
-    anthropic/claude-sonnet-4.5 | ❌ Fail     | ⚪ Not Run     | ⚪ Not Run | ⚪ Not Run    
-    openai/gpt-5-codex          | ❌ Fail     | ⚪ Not Run     | ⚪ Not Run | ⚪ Not Run    
+**google/gemini-2.5-pro**
+- 1_dijkstra: ❌ Fail (0.213s)
+- 2_convex_hull: ⚪ Not Run
+- 3_lis: ⚪ Not Run
+- 4_determinant: ⚪ Not Run
+
+**anthropic/claude-sonnet-4.5**
+- 1_dijkstra: ❌ Fail (0.189s)
+- 2_convex_hull: ⚪ Not Run
+- 3_lis: ⚪ Not Run
+- 4_determinant: ⚪ Not Run
+
+**openai/gpt-5-codex**
+- 1_dijkstra: ❌ Fail (0.245s)
+- 2_convex_hull: ⚪ Not Run
+- 3_lis: ⚪ Not Run
+- 4_determinant: ⚪ Not Run
 <!-- RESULTS_END -->
