@@ -3,6 +3,7 @@ const path = require('path');
 const axios = require('axios');
 const { exec } = require('child_process');
 const util = require('util');
+const { performance } = require('perf_hooks');
 
 const execPromise = util.promisify(exec);
 const README_PATH = path.join(__dirname, '..', 'README');
@@ -25,15 +26,17 @@ const getLlmCode = async (prompt, model) => {
 };
 
 const runTest = async (code) => {
+  const start = performance.now();
+  let passed = false;
   try {
     await fs.writeFile(TEMP_FILE, code);
     await execPromise(`node ${TEMP_FILE}`);
-    return true;
-  } catch (error) {
-    return false;
+    passed = true;
+  } catch (error) { // eslint-disable-line no-empty
   } finally {
     await fs.unlink(TEMP_FILE).catch(() => {});
   }
+  return { passed, duration: (performance.now() - start) / 1000 };
 };
 
 const main = async () => {
@@ -44,12 +47,12 @@ const main = async () => {
     .filter(d => d.isDirectory()).map(d => d.name).sort();
   const testsToRun = allTestDirs.slice(0, Math.ceil(allTestDirs.length * (percentage / 100)));
 
-  const resultsData = [];
+  const results = [];
   for (const model of models) {
-    const row = { Model: model };
+    results.push(`**${model}**`);
     for (const dir of allTestDirs) {
       if (!testsToRun.includes(dir)) {
-        row[dir] = '⚪ Not Run';
+        results.push(`- ${dir}: ⚪ Not Run`);
         continue;
       }
       const { prompt, harness } = require(path.join(TESTS_DIR, dir, 'test.js'));
@@ -60,32 +63,18 @@ const main = async () => {
         await fs.mkdir(outDir, { recursive: true });
         const fname = `${model.replace(/[\/:]/g, '_')}_${new Date().toISOString().replace(/:/g, '-')}.js`;
         await fs.writeFile(path.join(outDir, fname), llmCode);
-        row[dir] = (await runTest(`${llmCode}\n${harness}`)) ? '✅ Pass' : '❌ Fail';
+        const { passed, duration } = await runTest(`${llmCode}\n${harness}`);
+        results.push(`- ${dir}: ${passed ? '✅ Pass' : '❌ Fail'} (${duration.toFixed(3)}s)`);
       } else {
-        row[dir] = '❌ API Error';
+        results.push(`- ${dir}: ❌ API Error`);
       }
     }
-    resultsData.push(row);
+    results.push('');
   }
-
-  const headers = ['Model', ...allTestDirs];
-  const colWidths = Object.fromEntries(headers.map(h => 
-    [h, Math.max(h.length, ...resultsData.map(r => r[h]?.length ?? 0))]
-  ));
-  
-  const formatRow = (data, padChar = ' ') => 
-    headers.map(h => (data[h] ?? '').padEnd(colWidths[h], padChar)).join(' | ');
-
-  const headerObj = Object.fromEntries(headers.map(h => [h,h]));
-  const resultsTable = [
-    formatRow(headerObj),
-    formatRow({}, '-'),
-    ...resultsData.map(row => formatRow(row))
-  ].map(line => '    ' + line).join('\n');
 
   const newReadme = readme.replace(
     /<!-- RESULTS_START -->[\s\S]*<!-- RESULTS_END -->/,
-    `<!-- RESULTS_START -->\n${resultsTable}\n<!-- RESULTS_END -->`
+    `<!-- RESULTS_START -->\n${results.join('\n').trim()}\n<!-- RESULTS_END -->`
   );
   await fs.writeFile(README_PATH, newReadme);
   console.log('Benchmark complete. README updated.');
