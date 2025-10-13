@@ -14,4 +14,3 @@ const findLISLength = async (arr) => {
 };
 
 export default findLISLength;
-export default findLISLength;
