@@ -8,7 +8,7 @@ import { performance } from 'perf_hooks';
 
 const execPromise = promisify(exec);
 const CWD = process.cwd();
-const README_PATH = path.join(CWD, 'README.md');
+const README_PATH = path.join(CWD, 'README');
 const TESTS_DIR = path.join(CWD, 'tests');
 const TEMP_FILE = path.join(CWD, 'scripts', 'temp_test.js');
 
