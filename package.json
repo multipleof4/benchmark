@@ -2,6 +2,7 @@
   "name": "llm-benchmark",
   "version": "1.0.0",
   "description": "An automated benchmark for LLM coding abilities.",
+  "type": "module",
   "main": "scripts/run-benchmark.js",
   "scripts": {
     "start": "node scripts/run-benchmark.js"
