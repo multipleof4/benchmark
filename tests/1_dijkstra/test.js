@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   prompt: `
 // Write an async JavaScript function 'findShortestPath' that finds the shortest path in a weighted, undirected graph using Dijkstra's algorithm.
 // - The function must accept a graph, a start node, and an end node.
@@ -7,7 +7,7 @@ module.exports = {
 // - Graph format: { 'A': { 'B': 1, 'C': 4 }, 'B': { ... }, ... }
 `,
   harness: `
-const assert = require('assert');
+import assert from 'assert';
 async function runTest() {
   const graph = {
     A: { B: 2, C: 5 },
