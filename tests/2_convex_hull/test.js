@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   prompt: `
 // Write an async JavaScript function 'findConvexHull' that finds the convex hull of a set of 2D points using the Monotone Chain algorithm.
 // - The function must accept an array of points, e.g., [{x: 0, y: 3}, {x: 1, y: 1}, ...].
@@ -6,7 +6,7 @@ module.exports = {
 // - The function should return an array of points representing the convex hull, ordered clockwise.
 `,
   harness: `
-const assert = require('assert');
+import assert from 'assert';
 async function runTest() {
   const points = [
     {x: 0, y: 3}, {x: 1, y: 1}, {x: 2, y: 2}, {x: 4, y: 4},
