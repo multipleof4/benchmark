@@ -1,5 +1,7 @@
 export default {
   prompt: `
+// Your goal is to write a production-ready and maintainable JavaScript function. Apply code-golfing practices without sacrificing readability by putting everything on one line. Do not include any comments in your code.
+//
 // Write an async JavaScript function 'findShortestPath' that finds the shortest path in a weighted, undirected graph using Dijkstra's algorithm.
 // - The function must accept a graph, a start node, and an end node.
 // - You MUST use a dynamic import() to load the 'js-priority-queue' library from a CDN (e.g., jsdelivr) for the priority queue.
