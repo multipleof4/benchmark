@@ -20,7 +20,7 @@ const getLlmCode = async (prompt, model, functionName, temperature) => {
     const duration = (performance.now() - start) / 1000;
     const content = res.data.choices[0].message.content;
     const code = content.match(/```(?:javascript|js)?\n([\s\S]+?)\n```/)?.[1].trim() ?? content.trim();
-    const finalCode = `${code.replace(/^export\s+(default\s+)?/, '')}\nexport default ${functionName};`;
+    const finalCode = `${code.replace(/export\s+default\s+.*$/m, '')}\nexport default ${functionName};`;
     return { code: finalCode, duration };
   } catch (error) {
     console.error(`API Error for ${model}: ${error.message}`);
