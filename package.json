@@ -1,1 +1,19 @@
-
+{
+  "name": "llm-benchmark",
+  "version": "1.0.0",
+  "description": "An automated benchmark for LLM coding abilities.",
+  "main": "scripts/run-benchmark.js",
+  "scripts": {
+    "start": "node scripts/run-benchmark.js"
+  },
+  "keywords": [
+    "llm",
+    "benchmark",
+    "ai"
+  ],
+  "author": "Master",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.8"
+  }
+}
