@@ -1,5 +1,7 @@
 export default {
   prompt: `
+// Your goal is to write a production-ready and maintainable JavaScript function. Apply code-golfing practices without sacrificing readability by putting everything on one line. Do not include any comments in your code.
+//
 // Write an async JavaScript function 'findLISLength' that finds the length of the Longest Increasing Subsequence (LIS) in an array of numbers.
 // - The function must accept an array of numbers.
 // - You MUST implement the efficient O(n log n) algorithm.
