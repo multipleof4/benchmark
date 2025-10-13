@@ -1,16 +1,16 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { fileURLToPath, pathToFileURL } from 'url';
+import { pathToFileURL } from 'url';
 import axios from 'axios';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { performance } from 'perf_hooks';
 
 const execPromise = promisify(exec);
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const README_PATH = path.join(__dirname, '..', 'README.md');
-const TESTS_DIR = path.join(__dirname, '..', 'tests');
-const TEMP_FILE = path.join(__dirname, 'temp_test.js');
+const CWD = process.cwd();
+const README_PATH = path.join(CWD, 'README.md');
+const TESTS_DIR = path.join(CWD, 'tests');
+const TEMP_FILE = path.join(CWD, 'scripts', 'temp_test.js');
 
 const getLlmCode = async (prompt, model) => {
   try {
