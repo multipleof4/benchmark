@@ -2,7 +2,7 @@ Set the percentage of tests to run during the benchmark. 100% runs all tests.
 
 <!-- CONFIG_START -->
 RUN_PERCENTAGE: 100
-SHARED_PROMPT: "Provide production-ready and maintainable JavaScript code. Apply code golfing practices but don't put everything in a single line. No comments."
+SHARED_PROMPT: "Provide production-ready and maintainable JavaScript code. Apply code golfing practices but don't put everything in a single line. No comments. Your code will execute in the browser."
 <!-- CONFIG_END -->
 
 
