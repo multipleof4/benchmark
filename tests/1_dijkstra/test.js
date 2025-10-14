@@ -2,7 +2,7 @@ export default {
   functionName: 'findShortestPath',
   prompt: `// Write an async JavaScript function 'findShortestPath' that finds the shortest path in a weighted, undirected graph using Dijkstra's algorithm.
 // - The function must accept a graph, a start node, and an end node.
-// - You MUST use a dynamic import() to load the 'js-priority-queue' library from a CDN (e.g., jsdelivr) for the priority queue.
+// - You MUST use a dynamic import() to load the 'js-priority-queue' library from a CDN for the priority queue.
 // - The function should return the total weight of the shortest path, or Infinity if no path exists.
 // - Graph format: { 'A': { 'B': 1, 'C': 4 }, 'B': { ... }, ... }`,
   runTest: async (findShortestPath) => {
