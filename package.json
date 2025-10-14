@@ -12,8 +12,8 @@
     "benchmark",
     "ai"
   ],
-  "author": "Master",
-  "license": "MIT",
+  "author": "",
+  "license": "",
   "dependencies": {
     "axios": "^1.6.8"
   }
