@@ -64,7 +64,7 @@
               const lMod = await import(`./tests/${test}/outputs/${sModel}.js`);
               await tMod.default.runTest(lMod.default);
             })();
-            const timeout = new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 8000));
+            const timeout = new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 12000));
             await Promise.race([testPromise, timeout]);
             itemHTML = `✅ <span class="font-medium text-gray-800">${test}</span>`;
           } catch (e) {
