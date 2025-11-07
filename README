@@ -9,9 +9,8 @@ SHARED_PROMPT: "Provide production-ready and maintainable JavaScript code. Apply
 The following models are included in the benchmark run.
 
 <!-- MODELS_START -->
-google/gemini-2.5-pro
+openrouter/polaris-alpha
 google/gemini-2.5-pro TEMP:0.7
-google/gemini-2.5-pro TEMP:0.4
 anthropic/claude-sonnet-4.5
 anthropic/claude-sonnet-4.5 TEMP:0.7
 anthropic/claude-sonnet-4.5 TEMP:0.4
