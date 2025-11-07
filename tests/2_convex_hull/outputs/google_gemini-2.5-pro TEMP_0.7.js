@@ -1,34 +1,29 @@
 async function findConvexHull(points) {
-  const _ = await import('https://cdn.jsdelivr.net/npm/lodash@4.17.21/+esm');
+  const _ = await import('https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js');
 
-  const uniqueSortedPoints = _.sortBy(
-    _.uniqBy(points, p => `${p.x}:${p.y}`),
-    ['x', 'y']
-  );
+  const sortedUniquePoints = _.uniqWith(_.sortBy(points, ['x', 'y']), _.isEqual);
 
-  if (uniqueSortedPoints.length < 3) {
-    return uniqueSortedPoints;
+  if (sortedUniquePoints.length < 3) {
+    return sortedUniquePoints;
   }
 
   const crossProduct = (p1, p2, p3) =>
     (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x);
 
-  const buildHalfHull = pts => {
-    const half = [];
+  const buildHalfHull = (pts) => {
+    const hull = [];
     for (const p of pts) {
-      while (half.length >= 2 && crossProduct(half.at(-2), half.at(-1), p) <= 0) {
-        half.pop();
+      while (hull.length >= 2 && crossProduct(hull.at(-2), hull.at(-1), p) <= 0) {
+        hull.pop();
       }
-      half.push(p);
+      hull.push(p);
     }
-    return half;
+    return hull;
   };
 
-  const lower = buildHalfHull(uniqueSortedPoints);
-  const upper = buildHalfHull([...uniqueSortedPoints].reverse());
+  const lowerHull = buildHalfHull(sortedUniquePoints);
+  const upperHull = buildHalfHull([...sortedUniquePoints].reverse());
 
-  const ccwHull = lower.slice(0, -1).concat(upper.slice(0, -1));
-
-  return [ccwHull[0], ...ccwHull.slice(1).reverse()];
+  return [...upperHull.slice(0, -1), ...lowerHull.slice(0, -1)];
 }
 export default findConvexHull;

@@ -1,14 +1,14 @@
-const loadBisectLeft=(()=>{let cache;return()=>cache||(cache=import('https://cdn.jsdelivr.net/npm/d3-array@3/+esm').then(({bisectLeft})=>bisectLeft));})();  
-export async function findLISLength(nums){  
-  if(!Array.isArray(nums)) throw new TypeError('Expected an array');  
-  if(!nums.length) return 0;  
-  const bisectLeft=await loadBisectLeft();  
-  const tails=[];  
-  for(const value of nums){  
-    if(!Number.isFinite(value)) throw new TypeError('Array must contain only finite numbers');  
-    const index=bisectLeft(tails,value,0,tails.length);  
-    tails[index]=value;  
-  }  
-  return tails.length;  
+const findLISLength=async a=>{
+ if(!Array.isArray(a)) throw new TypeError('Expected an array')
+ const {bisectLeft:b}=await (findLISLength.m??=import('https://cdn.jsdelivr.net/npm/d3-array@3/+esm'))
+ const t=[]
+ for(const v of a){
+  if(!Number.isFinite(v)) throw new TypeError('Array values must be finite numbers')
+  const i=b(t,v)
+  if(i===t.length) t.push(v)
+  else t[i]=v
+ }
+ return t.length
 }
+window.findLISLength=findLISLength
 export default findLISLength;

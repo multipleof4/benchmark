@@ -1,15 +1,15 @@
-const findLISLength = async (nums) => {
-  const { bisectLeft } = await import('https://cdn.skypack.dev/d3-array');
-  
+async function findLISLength(nums) {
   if (!nums?.length) return 0;
+  
+  const { bisectLeft } = await import('https://cdn.skypack.dev/d3-array');
   
   const tails = [];
   
   for (const num of nums) {
-    const idx = bisectLeft(tails, num);
-    tails[idx] = num;
+    const pos = bisectLeft(tails, num);
+    tails[pos] = num;
   }
   
   return tails.length;
-};
+}
 export default findLISLength;

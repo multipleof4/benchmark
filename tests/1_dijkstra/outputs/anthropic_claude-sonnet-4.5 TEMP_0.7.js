@@ -1,35 +1,29 @@
 async function findShortestPath(graph, start, end) {
-  const { default: PriorityQueue } = await import(
-    'https://cdn.jsdelivr.net/npm/js-priority-queue@0.1.5/+esm'
-  );
-
-  const distances = Object.keys(graph).reduce((acc, node) => {
-    acc[node] = node === start ? 0 : Infinity;
-    return acc;
-  }, {});
-
-  const pq = new PriorityQueue({ comparator: (a, b) => a.dist - b.dist });
-  pq.queue({ node: start, dist: 0 });
-
+  const { default: PriorityQueue } = await import('https://cdn.skypack.dev/js-priority-queue');
+  
+  const dist = { [start]: 0 };
+  const pq = new PriorityQueue({ comparator: (a, b) => a[1] - b[1] });
   const visited = new Set();
-
+  
+  pq.queue([start, 0]);
+  
   while (pq.length) {
-    const { node, dist } = pq.dequeue();
-
+    const [node, d] = pq.dequeue();
+    
     if (visited.has(node)) continue;
     visited.add(node);
-
-    if (node === end) return dist;
-
+    
+    if (node === end) return d;
+    
     for (const [neighbor, weight] of Object.entries(graph[node] || {})) {
-      const newDist = dist + weight;
-      if (newDist < distances[neighbor]) {
-        distances[neighbor] = newDist;
-        pq.queue({ node: neighbor, dist: newDist });
+      const newDist = d + weight;
+      if (newDist < (dist[neighbor] ?? Infinity)) {
+        dist[neighbor] = newDist;
+        pq.queue([neighbor, newDist]);
       }
     }
   }
-
-  return distances[end];
+  
+  return Infinity;
 }
 export default findShortestPath;

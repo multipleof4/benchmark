@@ -1,29 +1,24 @@
-let u;
-const loadQueue=async()=> (u=u||import('https://cdn.jsdelivr.net/npm/js-priority-queue@0.2.0/es6.js')).then(r=>r.default);
-
-export async function findShortestPath(graph,start,end){
- if(start===end) return 0;
- if(!graph||typeof graph!=='object') return Infinity;
- const own=Object.prototype.hasOwnProperty;
- if(!own.call(graph,start)||!own.call(graph,end)) return Infinity;
- const PriorityQueue=await loadQueue();
- const dist=new Map([[start,0]]);
- const heap=new PriorityQueue({comparator:(a,b)=>a[1]-b[1]});
- heap.queue([start,0]);
- while(heap.length){
-  const [node,score]=heap.dequeue();
-  if(score>dist.get(node)) continue;
-  if(node===end) return score;
-  const edges=graph[node];
-  if(!edges) continue;
-  for(const [next,weight] of Object.entries(edges)){
-   const total=score+weight;
-   if(total<(dist.get(next)??Infinity)){
-    dist.set(next,total);
-    heap.queue([next,total]);
-   }
-  }
- }
- return Infinity;
+let u
+const o=()=>u||(u=import('https://cdn.skypack.dev/js-priority-queue').then(r=>r.default||r))
+async function findShortestPath(g,s,t){
+const PQ=await o()
+if(s===t)return 0
+const d={},q=new PQ({comparator:(a,b)=>a[1]-b[1]})
+for(const k in g)d[k]=Infinity
+d[s]=0
+q.queue([s,0])
+while(q.length){
+const[n,w]=q.dequeue()
+if(w>d[n])continue
+if(n===t)return w
+for(const[nb,c]of Object.entries(g[n]||{})){
+const nw=w+c
+if(nw<d[nb]){
+d[nb]=nw
+q.queue([nb,nw])
+}
+}
+}
+return Infinity
 }
 export default findShortestPath;

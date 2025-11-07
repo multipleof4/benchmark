@@ -1,9 +1,9 @@
 async function findConvexHull(points) {
-  const { sortBy, uniqWith } = await import('https://cdn.skypack.dev/lodash');
+  const _ = await import('https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/lodash.min.js').then(m => m.default);
   
   if (points.length < 3) return points;
   
-  const sorted = sortBy(uniqWith(points, (a, b) => a.x === b.x && a.y === b.y), ['x', 'y']);
+  const sorted = _.sortBy(_.uniqWith(points, _.isEqual), ['x', 'y']);
   
   if (sorted.length < 3) return sorted;
   
@@ -12,7 +12,7 @@ async function findConvexHull(points) {
   const buildHull = arr => {
     const hull = [];
     for (const p of arr) {
-      while (hull.length > 1 && cross(hull[hull.length - 2], hull[hull.length - 1], p) <= 0) {
+      while (hull.length >= 2 && cross(hull[hull.length - 2], hull[hull.length - 1], p) <= 0) {
         hull.pop();
       }
       hull.push(p);
@@ -21,6 +21,9 @@ async function findConvexHull(points) {
     return hull;
   };
   
-  return [...buildHull(sorted), ...buildHull(sorted.slice().reverse())];
+  const lower = buildHull(sorted);
+  const upper = buildHull([...sorted].reverse());
+  
+  return [...lower, ...upper].reverse();
 }
 export default findConvexHull;

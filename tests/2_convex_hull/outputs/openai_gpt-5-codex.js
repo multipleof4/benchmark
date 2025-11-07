@@ -1,23 +1,19 @@
-const lod=import('https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/lodash.js');
-
-export async function findConvexHull(input){
-  if(!Array.isArray(input)) return [];
-  const {uniqBy:uniq,sortBy:sort}=await lod;
-  const pts=sort(uniq(input.filter(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.y)).map(p=>({x:+p.x,y:+p.y})),p=>`${p.x}:${p.y}`),['x','y']);
-  if(pts.length<2) return pts;
-  const area=(a,b,c)=>(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
-  const walk=list=>{
-    const res=[];
-    for(const p of list){
-      while(res.length>1&&area(res[res.length-2],res[res.length-1],p)<=0)res.pop();
-      res.push(p);
-    }
-    return res;
-  };
-  const low=walk(pts);
-  const up=walk(pts.slice().reverse());
-  const hull=low.slice(0,-1).concat(up.slice(0,-1));
-  const out=hull.length?hull:pts.slice(0,2);
-  return out.length<3?out:out.reverse();
+async function findConvexHull(points){
+ const {default:_}=await import('https://cdn.skypack.dev/lodash-es');
+ const pts=_.uniqWith(_.sortBy(points,['x','y']),(a,b)=>a.x===b.x&&a.y===b.y);
+ if(pts.length<3) return pts.slice();
+ const c=(o,a,b)=>(a.x-o.x)*(b.y-o.y)-(a.y-o.y)*(b.x-o.x);
+ const l=[],u=[];
+ for(const p of pts){
+  while(l.length>1&&c(l.at(-2),l.at(-1),p)<=0)l.pop();
+  l.push(p);
+ }
+ for(let i=pts.length;i--;){
+  const p=pts[i];
+  while(u.length>1&&c(u.at(-2),u.at(-1),p)<=0)u.pop();
+  u.push(p);
+ }
+ l.pop();u.pop();
+ return [...l,...u].reverse();
 }
 export default findConvexHull;

@@ -1,44 +1,62 @@
 {
-  "google/gemini-2.5-pro": {
-    "1_dijkstra": 37.563614472,
-    "2_convex_hull": 30.02974868399999,
-    "3_lis": 42.240308332,
-    "4_determinant": 13.347867265000009
+  "openrouter/polaris-alpha": {
+    "1_dijkstra": 5.063492935,
+    "2_convex_hull": 7.998615312,
+    "3_lis": 2.2021910790000003,
+    "4_determinant": 2.4727166589999996,
+    "5_markdown_parser": 2.1889706240000013,
+    "6_csv_processor": 6.424773092,
+    "7_scheduler": 19.749020437,
+    "8_json_validator": 3.7860971980000033
   },
   "google/gemini-2.5-pro TEMP:0.7": {
-    "1_dijkstra": 57.442001282000014,
-    "2_convex_hull": 94.02301281699998,
-    "3_lis": 11.979348513000005,
-    "4_determinant": 12.74124894999998
-  },
-  "google/gemini-2.5-pro TEMP:0.4": {
-    "1_dijkstra": 47.84090968399995,
-    "2_convex_hull": 42.86752973399998,
-    "3_lis": 27.62078084000002,
-    "4_determinant": 8.960109082999988
+    "1_dijkstra": 30.986608248000003,
+    "2_convex_hull": 58.090286611,
+    "3_lis": 39.50342178599999,
+    "4_determinant": 21.314621672999987,
+    "5_markdown_parser": 21.140068067999994,
+    "6_csv_processor": 46.383014058,
+    "7_scheduler": 74.787878823,
+    "8_json_validator": 39.59319957399997
   },
   "anthropic/claude-sonnet-4.5": {
-    "1_dijkstra": 13.460692856000039,
-    "2_convex_hull": 5.613852328000008,
-    "3_lis": 2.8292644480000018,
-    "4_determinant": 3.0375356369999937
+    "1_dijkstra": 4.355259537999983,
+    "2_convex_hull": 4.980808106000011,
+    "3_lis": 2.2764143039999762,
+    "4_determinant": 1.8504535560000221,
+    "5_markdown_parser": 1.841865622000012,
+    "6_csv_processor": 4.9831007339999775,
+    "7_scheduler": 12.904369474000006,
+    "8_json_validator": 2.7832529310000247
   },
   "anthropic/claude-sonnet-4.5 TEMP:0.7": {
-    "1_dijkstra": 5.0235283530000014,
-    "2_convex_hull": 5.469308726000017,
-    "3_lis": 2.9667647899999867,
-    "4_determinant": 6.369721143000002
+    "1_dijkstra": 3.933310278000019,
+    "2_convex_hull": 4.819035326000012,
+    "3_lis": 2.34827887899999,
+    "4_determinant": 1.644420714000007,
+    "5_markdown_parser": 2.280882503999979,
+    "6_csv_processor": 4.7151394149999835,
+    "7_scheduler": 13.658607328000013,
+    "8_json_validator": 3.4110046910000382
   },
   "anthropic/claude-sonnet-4.5 TEMP:0.4": {
-    "1_dijkstra": null,
-    "2_convex_hull": 6.095885308999976,
-    "3_lis": 3.749924349999987,
-    "4_determinant": 12.665039036000032
+    "1_dijkstra": 3.954044443999999,
+    "2_convex_hull": 4.5914942489999815,
+    "3_lis": 2.4153946509999806,
+    "4_determinant": 1.7196861260000151,
+    "5_markdown_parser": 1.801734215000004,
+    "6_csv_processor": 4.646366793999972,
+    "7_scheduler": 12.781063763999962,
+    "8_json_validator": 3.3014615179999964
   },
   "openai/gpt-5-codex": {
-    "1_dijkstra": 97.35094948799996,
-    "2_convex_hull": 145.25300972899993,
-    "3_lis": 53.988241607000006,
-    "4_determinant": 6.342495287999976
+    "1_dijkstra": 36.88321140999993,
+    "2_convex_hull": 26.59820080500003,
+    "3_lis": 12.8049466599999,
+    "4_determinant": 10.523928330000023,
+    "5_markdown_parser": 57.74550891099998,
+    "6_csv_processor": 105.18542238100001,
+    "7_scheduler": 127.650813921,
+    "8_json_validator": 24.58168081499997
   }
 }
