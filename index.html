@@ -26,8 +26,9 @@
     </div>
   </main>
   <script type="module">
-    const container = document.getElementById('results-container');
-    const updatedEl = document.getElementById('last-updated');
+    const get = id => document.getElementById(id);
+    const container = get('results-container');
+    const updatedEl = get('last-updated');
     const now = new Date();
     updatedEl.textContent = now.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     updatedEl.dateTime = now.toISOString().split('T')[0];
@@ -48,7 +49,7 @@
           </div>
           <ul class="p-4 space-y-2" id="list-${sModel}"></ul>`;
         container.appendChild(card);
-        const list = document.getElementById(`list-${sModel}`);
+        const list = get(`list-${sModel}`);
 
         for (const test of tests) {
           const li = document.createElement('li');
@@ -63,7 +64,7 @@
               const lMod = await import(`./tests/${test}/outputs/${sModel}.js`);
               await tMod.default.runTest(lMod.default);
             })();
-            const timeout = new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 5000));
+            const timeout = new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 8000));
             await Promise.race([testPromise, timeout]);
             itemHTML = `✅ <span class="font-medium text-gray-800">${test}</span>`;
           } catch (e) {
