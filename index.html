@@ -36,7 +36,7 @@
       const readme = await fetch('./README').then(r => r.text());
       const genTimes = await fetch('./results.json').then(r => r.json());
       const models = readme.match(/<!-- MODELS_START -->\n([\s\S]+?)\n<!-- MODELS_END -->/)[1].trim().split('\n');
-      const tests = ['1_dijkstra', '2_convex_hull', '3_lis', '4_determinant'];
+      const tests = [...new Set(Object.values(genTimes).flatMap(Object.keys))].sort();
       
       for (const model of models) {
         const sModel = model.replace(/[\/:]/g, '_');
