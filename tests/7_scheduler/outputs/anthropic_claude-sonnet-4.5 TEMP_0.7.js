@@ -1,93 +1,85 @@
 const findAvailableSlots = async (cal1, cal2, constraints) => {
-  const { default: dayjs } = await import('https://cdn.skypack.dev/dayjs@1.11.10');
-  const { default: utc } = await import('https://cdn.skypack.dev/dayjs@1.11.10/plugin/utc');
-  const { default: customParseFormat } = await import('https://cdn.skypack.dev/dayjs@1.11.10/plugin/customParseFormat');
+  const { DateTime, Interval } = await import('https://cdn.skypack.dev/luxon');
   
-  dayjs.extend(utc);
-  dayjs.extend(customParseFormat);
-
-  const { durationMinutes, searchRange, workHours } = constraints;
-  const duration = durationMinutes * 60000;
+  const { durationMinutes: dur, searchRange: range, workHours: wh } = constraints;
+  const [rangeStart, rangeEnd] = [DateTime.fromISO(range.start), DateTime.fromISO(range.end)];
+  const [whStart, whEnd] = wh.start.split(':').map(Number);
+  const [whStartMin, whEndMin] = [whStart * 60 + (wh.start.split(':')[1] || 0), 
+                                    whEnd.split(':').map(Number).reduce((h, m) => h * 60 + m)];
   
-  const merged = [...cal1, ...cal2]
-    .map(({ start, end }) => ({ start: new Date(start).getTime(), end: new Date(end).getTime() }))
-    .sort((a, b) => a.start - b.start);
-
-  const busy = merged.reduce((acc, slot) => {
-    if (!acc.length) return [slot];
-    const last = acc[acc.length - 1];
-    if (slot.start <= last.end) {
-      last.end = Math.max(last.end, slot.end);
-      return acc;
+  const mergeIntervals = (intervals) => {
+    if (!intervals.length) return [];
+    const sorted = intervals.sort((a, b) => a.start - b.start);
+    const merged = [sorted[0]];
+    for (let i = 1; i < sorted.length; i++) {
+      const last = merged[merged.length - 1];
+      if (sorted[i].start <= last.end) {
+        last.end = last.end > sorted[i].end ? last.end : sorted[i].end;
+      } else {
+        merged.push(sorted[i]);
+      }
     }
-    acc.push(slot);
-    return acc;
-  }, []);
-
-  const rangeStart = new Date(searchRange.start).getTime();
-  const rangeEnd = new Date(searchRange.end).getTime();
-  const [whStart, whEnd] = [workHours.start, workHours.end];
-
-  const isWithinWorkHours = (ts) => {
-    const d = dayjs(ts);
-    const time = d.format('HH:mm');
-    return time >= whStart && time <= whEnd;
+    return merged;
   };
-
-  const getWorkDayBounds = (ts) => {
-    const d = dayjs(ts);
-    const [h1, m1] = whStart.split(':').map(Number);
-    const [h2, m2] = whEnd.split(':').map(Number);
-    return {
-      start: d.hour(h1).minute(m1).second(0).millisecond(0).valueOf(),
-      end: d.hour(h2).minute(m2).second(0).millisecond(0).valueOf()
-    };
+  
+  const toBusy = (cal) => cal.map(({ start, end }) => ({
+    start: DateTime.fromISO(start),
+    end: DateTime.fromISO(end)
+  }));
+  
+  const allBusy = mergeIntervals([...toBusy(cal1), ...toBusy(cal2)]);
+  
+  const isWorkHour = (dt) => {
+    const min = dt.hour * 60 + dt.minute;
+    return min >= whStartMin && min < whEndMin;
   };
-
+  
   const slots = [];
-  let current = rangeStart;
-
-  for (let ts = rangeStart; ts < rangeEnd; ts += 86400000) {
-    const { start: dayStart, end: dayEnd } = getWorkDayBounds(ts);
-    current = Math.max(current, dayStart);
-
-    busy.forEach(({ start: bStart, end: bEnd }) => {
-      if (bStart > current && bStart <= dayEnd) {
-        let slotStart = current;
-        while (slotStart + duration <= Math.min(bStart, dayEnd)) {
-          const slotEnd = slotStart + duration;
-          if (isWithinWorkHours(slotStart) && isWithinWorkHours(slotEnd)) {
-            slots.push({
-              start: new Date(slotStart).toISOString(),
-              end: new Date(slotEnd).toISOString()
-            });
-          }
-          slotStart = slotEnd;
-        }
-        current = Math.max(current, bEnd);
-      }
-      if (bEnd > current && bEnd <= dayEnd) {
-        current = Math.max(current, bEnd);
-      }
-    });
-
-    if (current < dayEnd) {
-      let slotStart = current;
-      while (slotStart + duration <= dayEnd) {
-        const slotEnd = slotStart + duration;
-        if (isWithinWorkHours(slotStart) && isWithinWorkHours(slotEnd)) {
-          slots.push({
-            start: new Date(slotStart).toISOString(),
-            end: new Date(slotEnd).toISOString()
-          });
-        }
-        slotStart = slotEnd;
-      }
+  let cursor = rangeStart;
+  
+  while (cursor < rangeEnd) {
+    if (!isWorkHour(cursor)) {
+      cursor = cursor.plus({ minutes: 1 });
+      continue;
     }
     
-    current = dayStart + 86400000;
+    const slotEnd = cursor.plus({ minutes: dur });
+    
+    if (slotEnd > rangeEnd) break;
+    
+    let validSlot = true;
+    let tempCursor = cursor;
+    while (tempCursor < slotEnd) {
+      if (!isWorkHour(tempCursor)) {
+        validSlot = false;
+        break;
+      }
+      tempCursor = tempCursor.plus({ minutes: 1 });
+    }
+    
+    if (!validSlot) {
+      cursor = cursor.plus({ minutes: 1 });
+      continue;
+    }
+    
+    const overlaps = allBusy.some(busy => 
+      (cursor >= busy.start && cursor < busy.end) || 
+      (slotEnd > busy.start && slotEnd <= busy.end) ||
+      (cursor <= busy.start && slotEnd >= busy.end)
+    );
+    
+    if (!overlaps) {
+      slots.push({
+        start: cursor.toISO(),
+        end: slotEnd.toISO()
+      });
+      cursor = slotEnd;
+    } else {
+      const nextBusy = allBusy.find(b => b.end > cursor && b.start <= cursor);
+      cursor = nextBusy ? nextBusy.end : cursor.plus({ minutes: 1 });
+    }
   }
-
+  
   return slots;
 };
 export default findAvailableSlots;

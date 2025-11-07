@@ -1,33 +1,32 @@
-const findShortestPath = async (graph, start, end) => {
-  const cdn = 'https://cdn.jsdelivr.net/npm/js-priority-queue@0.1.5/priority-queue.min.js';
-  const { default: PriorityQueue } = await import(cdn);
+async function findShortestPath(graph, startNode, endNode) {
+  const { default: PriorityQueue } = await import('https://cdn.jsdelivr.net/npm/js-priority-queue@0.1.5/priority-queue.min.js');
 
-  const distances = Object.fromEntries(
-    Object.keys(graph).map(node => [node, Infinity])
-  );
-  distances[start] = 0;
+  const dist = {};
+  const pq = new PriorityQueue({ comparator: (a, b) => dist[a] - dist[b] });
 
-  const pq = new PriorityQueue({
-    comparator: (a, b) => a.priority - b.priority
-  });
-  pq.queue({ value: start, priority: 0 });
+  for (const vertex in graph) {
+    dist[vertex] = Infinity;
+  }
+  dist[startNode] = 0;
+
+  pq.queue(startNode);
 
   while (pq.length) {
-    const { value: current } = pq.dequeue();
+    const u = pq.dequeue();
 
-    if (current === end) break;
+    if (u === endNode) break;
+    if (!graph[u] || dist[u] === Infinity) continue;
 
-    const neighbors = graph[current] || {};
-    for (const [neighbor, weight] of Object.entries(neighbors)) {
-      const newDist = distances[current] + weight;
+    for (const v in graph[u]) {
+      const newDist = dist[u] + graph[u][v];
 
-      if (newDist < distances[neighbor]) {
-        distances[neighbor] = newDist;
-        pq.queue({ value: neighbor, priority: newDist });
+      if (newDist < dist[v]) {
+        dist[v] = newDist;
+        pq.queue(v);
       }
     }
   }
 
-  return distances[end];
-};
+  return dist[endNode] ?? Infinity;
+}
 export default findShortestPath;

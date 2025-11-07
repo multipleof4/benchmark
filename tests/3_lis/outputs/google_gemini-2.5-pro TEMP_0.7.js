@@ -1,14 +1,14 @@
 const findLISLength = async (nums) => {
-  if (!nums?.length) {
-    return 0;
+  if (!nums?.length) return 0;
+
+  const { bisectLeft } = await import('https://cdn.jsdelivr.net/npm/d3-array@3/+esm');
+
+  const tails = [];
+
+  for (const num of nums) {
+    const i = bisectLeft(tails, num);
+    tails[i] = num;
   }
-
-  const { bisectLeft } = await import("https://cdn.jsdelivr.net/npm/d3-array@3");
-
-  const tails = nums.reduce((sub, num) => {
-    sub[bisectLeft(sub, num)] = num;
-    return sub;
-  }, []);
 
   return tails.length;
 };

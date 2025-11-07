@@ -1,9 +1,9 @@
 const findAvailableSlots = async (cal1, cal2, constraints) => {
   const { default: dayjs } = await import('https://cdn.jsdelivr.net/npm/dayjs@1.11.10/+esm');
   const [{ default: utc }, { default: customParseFormat }, { default: isBetween }] = await Promise.all([
-    import('https://cdn.jsdelivr.net/npm/dayjs@1.11.10/plugin/utc.js'),
-    import('https://cdn.jsdelivr.net/npm/dayjs@1.11.10/plugin/customParseFormat.js'),
-    import('https://cdn.jsdelivr.net/npm/dayjs@1.11.10/plugin/isBetween.js')
+    import('https://cdn.jsdelivr.net/npm/dayjs@1.11.10/plugin/utc.js/+esm'),
+    import('https://cdn.jsdelivr.net/npm/dayjs@1.11.10/plugin/customParseFormat.js/+esm'),
+    import('https://cdn.jsdelivr.net/npm/dayjs@1.11.10/plugin/isBetween.js/+esm')
   ]);
   
   dayjs.extend(utc);
@@ -11,65 +11,59 @@ const findAvailableSlots = async (cal1, cal2, constraints) => {
   dayjs.extend(isBetween);
 
   const { durationMinutes, searchRange, workHours } = constraints;
-  const duration = durationMinutes;
+  const [whStart, whEnd] = [workHours.start.split(':'), workHours.end.split(':')];
   
-  const mergedBusy = [...cal1, ...cal2]
+  const allBusy = [...cal1, ...cal2]
     .map(({ start, end }) => ({ start: dayjs(start), end: dayjs(end) }))
-    .sort((a, b) => a.start - b.start)
-    .reduce((acc, curr) => {
-      if (!acc.length) return [curr];
-      const last = acc[acc.length - 1];
-      if (curr.start <= last.end) {
-        last.end = dayjs.max(last.end, curr.end);
-        return acc;
-      }
-      return [...acc, curr];
-    }, []);
+    .sort((a, b) => a.start - b.start);
 
-  const searchStart = dayjs(searchRange.start);
-  const searchEnd = dayjs(searchRange.end);
-  const [workStart, workEnd] = [workHours.start, workHours.end];
-  
+  const merged = allBusy.reduce((acc, curr) => {
+    if (!acc.length || acc[acc.length - 1].end < curr.start) {
+      acc.push(curr);
+    } else {
+      acc[acc.length - 1].end = dayjs.max(acc[acc.length - 1].end, curr.end);
+    }
+    return acc;
+  }, []);
+
   const slots = [];
-  let current = searchStart;
+  let current = dayjs(searchRange.start);
+  const searchEnd = dayjs(searchRange.end);
 
   while (current < searchEnd) {
-    const dayStart = dayjs(`${current.format('YYYY-MM-DD')}T${workStart}`);
-    const dayEnd = dayjs(`${current.format('YYYY-MM-DD')}T${workEnd}`);
+    const dayStart = current.hour(+whStart[0]).minute(+whStart[1]).second(0);
+    const dayEnd = current.hour(+whEnd[0]).minute(+whEnd[1]).second(0);
     
-    const workStart_ = dayjs.max(current, dayStart);
-    const workEnd_ = dayjs.min(searchEnd, dayEnd);
-
-    if (workStart_ < workEnd_) {
-      const dayBusy = mergedBusy.filter(b => 
-        b.start < workEnd_ && b.end > workStart_
-      );
-
-      let pointer = workStart_;
+    let pointer = dayStart > current ? dayStart : current;
+    
+    for (const busy of merged) {
+      if (busy.start >= dayEnd) break;
+      if (busy.end <= pointer) continue;
       
-      for (const busy of dayBusy) {
-        const gapEnd = dayjs.min(busy.start, workEnd_);
-        
-        while (pointer.add(duration, 'minute') <= gapEnd) {
+      while (pointer.add(durationMinutes, 'minute') <= dayjs.min(busy.start, dayEnd)) {
+        const slotEnd = pointer.add(durationMinutes, 'minute');
+        if (pointer >= dayStart && slotEnd <= dayEnd && pointer >= dayjs(searchRange.start)) {
           slots.push({
             start: pointer.toISOString(),
-            end: pointer.add(duration, 'minute').toISOString()
+            end: slotEnd.toISOString()
           });
-          pointer = pointer.add(duration, 'minute');
         }
-        
-        pointer = dayjs.max(pointer, busy.end);
+        pointer = pointer.add(durationMinutes, 'minute');
       }
-
-      while (pointer.add(duration, 'minute') <= workEnd_) {
+      pointer = dayjs.max(pointer, busy.end);
+    }
+    
+    while (pointer.add(durationMinutes, 'minute') <= dayEnd) {
+      const slotEnd = pointer.add(durationMinutes, 'minute');
+      if (pointer >= dayStart && slotEnd <= searchEnd) {
         slots.push({
           start: pointer.toISOString(),
-          end: pointer.add(duration, 'minute').toISOString()
+          end: slotEnd.toISOString()
         });
-        pointer = pointer.add(duration, 'minute');
       }
+      pointer = pointer.add(durationMinutes, 'minute');
     }
-
+    
     current = current.add(1, 'day').startOf('day');
   }
 

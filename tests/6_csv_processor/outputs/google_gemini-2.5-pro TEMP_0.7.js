@@ -1,40 +1,42 @@
-const processCSV = async (csvString, {
+const processCSV = async (
+  csvString, {
     filterColumn,
     filterValue,
     groupBy,
     aggregateColumn,
     operation
-}) => {
-    const { default: Papa } = await import('https://cdn.jsdelivr.net/npm/papaparse@5.4.1/+esm');
+  }
+) => {
+  const [Papa, {
+    default: _
+  }] = await Promise.all([
+    import('https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js'),
+    import('https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/+esm'),
+  ]);
 
-    const aggregations = {
-        sum: g => g.s,
-        count: g => g.c,
-        avg: g => g.c ? g.s / g.c : 0,
-    };
+  const {
+    data
+  } = Papa.parse(csvString, {
+    header: true,
+    dynamicTyping: true,
+    skipEmptyLines: true,
+  });
 
-    const groupedData = Papa.parse(csvString, {
-        header: true,
-        skipEmptyLines: true,
-        dynamicTyping: true,
-    }).data
-    .filter(row => row[filterColumn] === filterValue)
-    .reduce((acc, row) => {
-        const key = row[groupBy];
-        const val = row[aggregateColumn];
+  const aggregators = {
+    sum: g => _.sumBy(g, aggregateColumn),
+    avg: g => _.meanBy(g, aggregateColumn),
+    count: g => g.length,
+  };
 
-        acc[key] = acc[key] || { s: 0, c: 0 };
-        if (typeof val === 'number' && !isNaN(val)) {
-            acc[key].s += val;
-        }
-        acc[key].c++;
-
-        return acc;
-    }, {});
-
-    return Object.entries(groupedData).map(([key, group]) => ({
-        [groupBy]: /^-?\d+(\.\d+)?$/.test(key) ? Number(key) : key,
-        [operation]: aggregations[operation](group),
-    }));
+  return _.chain(data)
+    .filter({
+      [filterColumn]: filterValue
+    })
+    .groupBy(groupBy)
+    .map((rows, key) => ({
+      [groupBy]: Number.isNaN(+key) ? key : +key,
+      result: aggregators[operation](rows),
+    }))
+    .value();
 };
 export default processCSV;

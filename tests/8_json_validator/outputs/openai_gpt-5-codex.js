@@ -1,17 +1,25 @@
-let ajvReady
-const loadAjv=()=>ajvReady??=(async()=>{
-  const {default:Ajv}=await import('https://cdn.jsdelivr.net/npm/ajv@8/dist/ajv2020.mjs')
-  return new Ajv({allErrors:true,strict:false})
-})()
+let ajv
+const cache=new WeakMap()
+const ensureAjv=async()=>ajv??=new (await import('https://cdn.jsdelivr.net/npm/ajv@8.12.0/+esm')).default({allErrors:true,strict:false})
+const getValidator=async schema=>{
+  if(cache.has(schema))return cache.get(schema)
+  const v=(await ensureAjv()).compile(schema)
+  cache.set(schema,v)
+  return v
+}
 async function validateJSON(data,schema){
-  const ajv=await loadAjv()
-  const validate=ajv.compile(schema)
-  const valid=validate(data)
-  const errors=valid?[]:validate.errors?.map(({instancePath,message,params})=>{
-    const here=instancePath||'/'
-    const extra=params&&Object.keys(params).length?JSON.stringify(params):''
-    return [here,message,extra].filter(Boolean).join(' ')
-  })||[]
-  return {valid,errors}
+  try{
+    const v=await getValidator(schema)
+    const valid=v(data)
+    const errors=valid?[]:(v.errors||[]).map(e=>{
+      const path=e.instancePath||'/'
+      const msg=e.message||'Invalid value'
+      const meta=e.params&&Object.keys(e.params).length?` ${JSON.stringify(e.params)}`:''
+      return`${path} ${msg}${meta}`.trim()
+    })
+    return{valid,errors}
+  }catch(err){
+    return{valid:false,errors:[err?.message||String(err)]}
+  }
 }
 export default validateJSON;

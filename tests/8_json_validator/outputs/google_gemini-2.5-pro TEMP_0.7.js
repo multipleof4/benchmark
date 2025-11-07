@@ -1,32 +1,25 @@
-let ajvPromise;
-const compiledSchemas = new WeakMap();
+const validateJSON = (() => {
+  let ajvPromise;
+  const validatorCache = new WeakMap();
 
-const validateJSON = async (json, schema) => {
-  try {
-    ajvPromise ||= import('https://esm.sh/ajv@8').then(
-      ({ default: Ajv }) => new Ajv({ allErrors: true })
-    );
+  return async (json, schema) => {
+    ajvPromise ||= import('https://cdn.jsdelivr.net/npm/ajv@8/dist/ajv2020.min.js')
+      .then(({ default: Ajv }) => new Ajv({ allErrors: true }));
+
     const ajv = await ajvPromise;
 
-    let validate = compiledSchemas.get(schema);
+    let validate = validatorCache.get(schema);
     if (!validate) {
       validate = ajv.compile(schema);
-      compiledSchemas.set(schema, validate);
+      validatorCache.set(schema, validate);
     }
 
     const valid = validate(json);
-    const errors = valid
-      ? []
-      : (validate.errors ?? []).map(({ instancePath, message }) =>
-          `${instancePath.substring(1) || 'root'}: ${message}`
-        );
+    const errors = valid ? [] : validate.errors.map(
+      ({ instancePath, message }) => `${instancePath || 'object'} ${message}`
+    );
 
     return { valid, errors };
-  } catch (error) {
-    return {
-      valid: false,
-      errors: [error.message || 'An unknown validation error occurred.'],
-    };
-  }
-};
+  };
+})();
 export default validateJSON;

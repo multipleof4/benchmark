@@ -1,30 +1,26 @@
-async function processCSV(csvString, config) {
-  const { parse } = await import('https://cdn.skypack.dev/papaparse@5.4.1');
+async function processCSV(csv, config) {
+  const { parse } = await import('https://esm.sh/papaparse@5.4.1');
+  const { groupBy, sumBy, meanBy, countBy } = await import('https://esm.sh/lodash-es@4.17.21');
   
-  const { filterColumn: fc, filterValue: fv, groupBy: gb, aggregateColumn: ac, operation: op } = config;
+  const { data } = parse(csv, { header: true, skipEmptyLines: true });
   
-  const { data } = parse(csvString, { header: true, skipEmptyLines: true });
+  const filtered = data.filter(row => 
+    String(row[config.filterColumn]) === String(config.filterValue)
+  );
   
-  const filtered = data.filter(row => row[fc] == fv);
+  const grouped = Object.entries(
+    groupBy(filtered, config.groupBy)
+  );
   
-  const grouped = filtered.reduce((acc, row) => {
-    const key = row[gb];
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(row);
-    return acc;
-  }, {});
+  const ops = {
+    sum: arr => sumBy(arr, r => parseFloat(r[config.aggregateColumn]) || 0),
+    avg: arr => meanBy(arr, r => parseFloat(r[config.aggregateColumn]) || 0),
+    count: arr => arr.length
+  };
   
-  return Object.entries(grouped).map(([key, rows]) => {
-    let result;
-    if (op === 'count') {
-      result = rows.length;
-    } else {
-      const values = rows.map(r => parseFloat(r[ac]) || 0);
-      result = op === 'sum' 
-        ? values.reduce((a, b) => a + b, 0)
-        : values.reduce((a, b) => a + b, 0) / values.length;
-    }
-    return { [gb]: key, result };
-  });
+  return grouped.map(([key, rows]) => ({
+    [config.groupBy]: key,
+    result: ops[config.operation](rows)
+  }));
 }
 export default processCSV;

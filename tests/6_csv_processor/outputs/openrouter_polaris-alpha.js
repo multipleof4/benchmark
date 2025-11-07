@@ -1,30 +1,35 @@
-async function processCSV(csv, cfg) {
-  const {filterColumn,filterValue,groupBy,aggregateColumn,operation} = cfg
-  if(!csv||!filterColumn||!groupBy||!operation) throw new Error('Invalid configuration')
-  const [{parse},{default:lodash}] = await Promise.all([
-    import('https://cdn.jsdelivr.net/npm/papaparse@5.4.1/+esm'),
-    import('https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/+esm')
-  ])
-  const {data,errors} = parse(csv,{header:true,skipEmptyLines:true,dynamicTyping:true})
-  if(errors?.length) throw new Error('CSV parse error')
-  const rows = data.filter(r=>r[filterColumn]===filterValue)
-  if(!rows.length) return []
-  const grouped = lodash.groupBy(rows,r=>r[groupBy])
+async function processCSV(csv, c) {
+  if (typeof csv !== 'string') throw new TypeError('csv must be string')
+  if (!c || typeof c !== 'object') throw new TypeError('config required')
+  let { filterColumn, filterValue, groupBy, aggregateColumn, operation } = c
+  if (!filterColumn || !groupBy || !operation) throw new Error('missing config')
+  if (!['sum', 'avg', 'count'].includes(operation)) throw new Error('bad op')
+
+  const { parse } = await import('https://cdn.skypack.dev/papaparse@5.4.1')
+  const _ = (await import('https://cdn.skypack.dev/lodash-es@4.17.21')).default
+
+  const { data, errors } = parse(csv, { header: true, dynamicTyping: true, skipEmptyLines: true })
+  if (errors && errors.length) throw new Error('csv parse error')
+
+  const rows = _.filter(data, r => r && r[filterColumn] === filterValue)
+  if (!rows.length) return []
+
+  const grouped = _.groupBy(rows, r => r[groupBy])
   const out = []
-  for(const k in grouped){
-    const g = grouped[k]
-    let v
-    if(operation==='count') v = g.length
-    else{
-      const nums = g.map(r=>Number(r[aggregateColumn])).filter(n=>Number.isFinite(n))
-      if(!nums.length) { v = operation==='sum'?0:null }
-      else{
-        const s = nums.reduce((a,b)=>a+b,0)
-        v = operation==='sum'?s:s/nums.length
-      }
+
+  _.forOwn(grouped, (items, k) => {
+    let result
+    if (operation === 'count') {
+      result = items.length
+    } else {
+      const nums = _.map(items, i => Number(i[aggregateColumn])).filter(v => Number.isFinite(v))
+      if (!nums.length) return
+      const sum = _.sum(nums)
+      result = operation === 'sum' ? sum : sum / nums.length
     }
-    out.push({[groupBy]:k,result:v})
-  }
+    out.push({ [groupBy]: k, result })
+  })
+
   return out
 }
 export default processCSV;
