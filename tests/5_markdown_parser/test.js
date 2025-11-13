@@ -14,5 +14,6 @@ export default {
     if (!html.includes('<h1>') || !html.includes('<strong>') || !html.includes('<em>') || !html.includes('<ul>') || !html.includes('<code>')) {
       throw new Error('Test Failed: HTML output missing required elements.');
     }
+    return html;
   }
 };
