@@ -28,5 +28,6 @@ export default {
     const invalidResult = await validateJSON(invalidData, schema);
     assert.strictEqual(invalidResult.valid, false, 'Test Failed: Invalid data marked as valid.');
     assert.ok(Array.isArray(invalidResult.errors) && invalidResult.errors.length > 0, 'Test Failed: No errors returned for invalid data.');
+    return { validResult, invalidResult };
   }
 };
