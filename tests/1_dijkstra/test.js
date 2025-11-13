@@ -15,5 +15,6 @@ export default {
     };
     const dist = await findShortestPath(graph, 'A', 'F');
     assert.strictEqual(dist, 7, "Test Failed: Path A to F should be 7.");
+    return dist;
   }
 };
