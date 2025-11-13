@@ -34,6 +34,6 @@ export default {
 
     const result = await findAvailableSlots(calendar1, calendar2, constraints);
     assert.deepStrictEqual(result, expected, 'Test Failed: Incorrect slots found.');
-    return result;
   }
 };
+
