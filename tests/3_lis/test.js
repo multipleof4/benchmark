@@ -12,6 +12,6 @@ export default {
     const nums = [10, 9, 2, 5, 3, 7, 101, 18, 4, 6];
     const length = await findLISLength(nums);
     assert.strictEqual(length, 4, "Test Failed: LIS length should be 4.");
-    return length;
   }
 };
+
