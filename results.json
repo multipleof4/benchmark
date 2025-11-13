@@ -1,32 +1,42 @@
 {
   "openai/gpt-5.1-codex": {
-    "1_dijkstra": 12.73643722,
-    "2_convex_hull": 20.551442495,
-    "3_lis": 6.9065933989999975,
-    "4_determinant": 3.340895964000003,
-    "5_markdown_parser": 3.5223763349999935,
-    "6_csv_processor": 16.396112775000002,
-    "7_scheduler": 85.407877246,
-    "8_json_validator": 9.581871734999993
+    "1_dijkstra": null,
+    "2_convex_hull": null,
+    "3_lis": 4.134811772999999,
+    "4_determinant": 3.128456531999999,
+    "5_markdown_parser": 2.4388916820000004,
+    "6_csv_processor": 43.478935838999995,
+    "7_scheduler": 84.317196593,
+    "8_json_validator": 6.765057070999989
+  },
+  "openai/gpt-5.1-chat": {
+    "1_dijkstra": null,
+    "2_convex_hull": 4.03333652099999,
+    "3_lis": 3.2548832980000006,
+    "4_determinant": 3.480435989999998,
+    "5_markdown_parser": 12.157845766999992,
+    "6_csv_processor": null,
+    "7_scheduler": 3.6146848039999897,
+    "8_json_validator": 3.9886151490000192
   },
   "google/gemini-2.5-pro": {
-    "1_dijkstra": 52.880149714,
-    "2_convex_hull": 53.18372889399997,
-    "3_lis": 28.706411030000016,
-    "4_determinant": 12.91266780300002,
-    "5_markdown_parser": 19.207484959000023,
-    "6_csv_processor": 37.37156615500001,
-    "7_scheduler": 108.64825142700003,
-    "8_json_validator": 25.360757163000002
+    "1_dijkstra": 44.864160204000015,
+    "2_convex_hull": 33.892027145,
+    "3_lis": 36.906535906,
+    "4_determinant": 11.497210719000025,
+    "5_markdown_parser": 13.62311761299998,
+    "6_csv_processor": 42.61058959099999,
+    "7_scheduler": 12.12732526100002,
+    "8_json_validator": 50.54006011399999
   },
   "anthropic/claude-sonnet-4.5 TEMP:0.7": {
-    "1_dijkstra": 3.8821057339999823,
-    "2_convex_hull": 4.63132335000002,
-    "3_lis": 2.5366414799999912,
-    "4_determinant": 1.642024412000028,
-    "5_markdown_parser": 2.235130207999959,
-    "6_csv_processor": 4.568896986000007,
-    "7_scheduler": 15.728725427000084,
-    "8_json_validator": 3.0146192130000564
+    "1_dijkstra": 4.8069697199999935,
+    "2_convex_hull": 4.475060508999974,
+    "3_lis": 2.835424330000009,
+    "4_determinant": 2.3172859399999726,
+    "5_markdown_parser": 2.080127800999966,
+    "6_csv_processor": 5.218456623000034,
+    "7_scheduler": 11.33699588100001,
+    "8_json_validator": 3.298284380999976
   }
 }

@@ -1,7 +1,5 @@
-let m
-export const parseMarkdown=async t=>{
-  m||(m=import('https://cdn.jsdelivr.net/npm/marked@12.0.2/lib/marked.esm.js'))
-  const {marked}=await m
-  return marked.parse(t)
+const parseMarkdown = async m => {
+  const { marked } = await import('https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js')
+  return marked.parse(m)
 }
 export default parseMarkdown;

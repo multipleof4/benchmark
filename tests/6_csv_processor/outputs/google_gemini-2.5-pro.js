@@ -1,4 +1,4 @@
-const processCSV = async (csvString, config) => {
+async function processCSV(csvString, config) {
   const {
     filterColumn,
     filterValue,
@@ -7,32 +7,38 @@ const processCSV = async (csvString, config) => {
     operation,
   } = config;
 
-  const [Papa, _] = await Promise.all([
-    import('https://cdn.jsdelivr.net/npm/papaparse@5.4.1/+esm'),
-    import('https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/+esm'),
-  ]);
+  const { default: Papa } = await import('https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js');
+
+  const { data } = Papa.parse(csvString, {
+    header: true,
+    dynamicTyping: true,
+    skipEmptyLines: true,
+  });
 
   const aggregators = {
-    sum: items => _.sumBy(items, aggregateColumn),
-    count: items => items.length,
-    avg: items => _.sumBy(items, aggregateColumn) / items.length || 0,
+    sum: (acc, val) => (acc || 0) + val,
+    count: (acc, _val) => (acc || 0) + 1,
+    avg: (acc, val) => {
+      const state = acc || { sum: 0, count: 0 };
+      state.sum += val;
+      state.count += 1;
+      return state;
+    },
   };
 
-  const { data } = await new Promise(resolve =>
-    Papa.parse(csvString, {
-      header: true,
-      dynamicTyping: true,
-      skipEmptyLines: true,
-      complete: resolve,
-    })
-  );
+  const groups = data
+    .filter(row => row[filterColumn] == filterValue)
+    .reduce((acc, row) => {
+      const key = row[groupBy];
+      acc[key] = aggregators[operation](acc[key], row[aggregateColumn]);
+      return acc;
+    }, {});
 
-  const filteredData = data.filter(row => row[filterColumn] === filterValue);
-  const groupedData = _.groupBy(filteredData, groupBy);
-
-  return Object.entries(groupedData).map(([key, group]) => ({
-    [groupBy]: isNaN(Number(key)) ? key : Number(key),
-    result: aggregators[operation](group),
+  return Object.entries(groups).map(([key, value]) => ({
+    [groupBy]: key,
+    result: operation === 'avg'
+      ? (value.count ? value.sum / value.count : 0)
+      : value,
   }));
-};
+}
 export default processCSV;
