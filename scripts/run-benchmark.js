@@ -37,10 +37,7 @@ const main = async () => {
     .filter(d => d.isDirectory()).map(d => d.name).sort();
 
   await Promise.all(
-    allTestDirs.flatMap(dir => [
-      fs.rm(path.join(TESTS_DIR, dir, 'outputs'), { recursive: true, force: true }),
-      fs.rm(path.join(TESTS_DIR, dir, 'results'), { recursive: true, force: true })
-    ])
+    allTestDirs.map(dir => fs.rm(path.join(TESTS_DIR, dir, 'outputs'), { recursive: true, force: true }))
   );
 
   const testsToRun = allTestDirs.slice(0, Math.ceil(allTestDirs.length * (percentage / 100)));
@@ -52,41 +49,27 @@ const main = async () => {
 
     genData[modelSpec] = {};
     for (const dir of testsToRun) {
-      const { prompt, functionName, runTest } = (await import(pathToFileURL(path.join(TESTS_DIR, dir, 'test.js')))).default;
-      
+      const { prompt, functionName } = (await import(pathToFileURL(path.join(TESTS_DIR, dir, 'test.js')))).default;
       console.log(`Generating ${dir} for ${modelSpec}...`);
-      const genResult = await getLlmCode(`${sharedPrompt}\n\n${prompt.trim()}`, model, functionName, temperature);
+      const result = await getLlmCode(
+        `${sharedPrompt}\n\n${prompt.trim()}`,
+        model,
+        functionName,
+        temperature
+      );
       
-      const sModel = modelSpec.replace(/[\/:]/g, '_');
+      genData[modelSpec][dir] = result?.duration ?? null;
+      if (!result) continue;
+
       const outDir = path.join(TESTS_DIR, dir, 'outputs');
       await fs.mkdir(outDir, { recursive: true });
-      const fpath = path.join(outDir, `${sModel}.js`);
-
-      let passed = false, error = 'Code generation failed', output = null;
-
-      if (genResult) {
-        await fs.writeFile(fpath, genResult.code);
-        try {
-          console.log(`Testing ${dir} for ${modelSpec}...`);
-          output = await runTest((await import(pathToFileURL(fpath))).default);
-          passed = true;
-          error = null;
-        } catch (e) {
-          console.error(`Test failed for ${modelSpec} on ${dir}: ${e.message}`);
-          error = e.message || String(e);
-        }
-      }
-
-      const resultsDir = path.join(TESTS_DIR, dir, 'results');
-      await fs.mkdir(resultsDir, { recursive: true });
-      const resultsFpath = path.join(resultsDir, `${sModel}.json`);
-      await fs.writeFile(resultsFpath, JSON.stringify({ output, error }, null, 2));
-
-      genData[modelSpec][dir] = { duration: genResult?.duration ?? null, passed, error };
+      const fname = `${modelSpec.replace(/[\/:]/g, '_')}.js`;
+      await fs.writeFile(path.join(outDir, fname), result.code);
     }
   }
   await fs.writeFile(RESULTS_PATH, JSON.stringify(genData, null, 2));
-  console.log('Benchmark complete. Results saved to results.json.');
+  console.log('Code generation and results.json update complete.');
 };
 
 main().catch(console.error);
+
