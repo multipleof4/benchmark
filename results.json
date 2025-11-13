@@ -1,62 +1,32 @@
 {
-  "openrouter/polaris-alpha": {
-    "1_dijkstra": 5.663508702,
-    "2_convex_hull": 5.853618222000001,
-    "3_lis": 2.7803642009999985,
-    "4_determinant": 2.2549030789999995,
-    "5_markdown_parser": 2.428845373,
-    "6_csv_processor": 7.004516176000001,
-    "7_scheduler": 14.370537171,
-    "8_json_validator": 4.488872165000001
+  "openai/gpt-5.1-codex": {
+    "1_dijkstra": 12.73643722,
+    "2_convex_hull": 20.551442495,
+    "3_lis": 6.9065933989999975,
+    "4_determinant": 3.340895964000003,
+    "5_markdown_parser": 3.5223763349999935,
+    "6_csv_processor": 16.396112775000002,
+    "7_scheduler": 85.407877246,
+    "8_json_validator": 9.581871734999993
   },
-  "google/gemini-2.5-pro TEMP:0.7": {
-    "1_dijkstra": 44.600899471,
-    "2_convex_hull": 37.66833377400001,
-    "3_lis": 15.942395212000017,
-    "4_determinant": 14.880486881999998,
-    "5_markdown_parser": 22.373131437000005,
-    "6_csv_processor": 44.242416465999995,
-    "7_scheduler": 59.66216159599999,
-    "8_json_validator": 56.66983818199998
-  },
-  "anthropic/claude-sonnet-4.5": {
-    "1_dijkstra": 4.15588515399996,
-    "2_convex_hull": 4.806273176999995,
-    "3_lis": 2.2488794699999852,
-    "4_determinant": 1.442708507000003,
-    "5_markdown_parser": 2.1533864889999967,
-    "6_csv_processor": 4.5494161339999994,
-    "7_scheduler": 13.169441607000016,
-    "8_json_validator": 2.83180839000002
+  "google/gemini-2.5-pro": {
+    "1_dijkstra": 52.880149714,
+    "2_convex_hull": 53.18372889399997,
+    "3_lis": 28.706411030000016,
+    "4_determinant": 12.91266780300002,
+    "5_markdown_parser": 19.207484959000023,
+    "6_csv_processor": 37.37156615500001,
+    "7_scheduler": 108.64825142700003,
+    "8_json_validator": 25.360757163000002
   },
   "anthropic/claude-sonnet-4.5 TEMP:0.7": {
-    "1_dijkstra": 4.402104449000035,
-    "2_convex_hull": 5.400227270999982,
-    "3_lis": 4.495708809000033,
-    "4_determinant": 1.8576504829999758,
-    "5_markdown_parser": 1.8857627109999884,
-    "6_csv_processor": 4.558546455000004,
-    "7_scheduler": 11.452500546000024,
-    "8_json_validator": 2.654919869999983
-  },
-  "anthropic/claude-sonnet-4.5 TEMP:0.4": {
-    "1_dijkstra": 4.231384166999953,
-    "2_convex_hull": 4.297011561000021,
-    "3_lis": 2.270648061999993,
-    "4_determinant": 1.5894071249999688,
-    "5_markdown_parser": 1.8096978460000246,
-    "6_csv_processor": 4.622239387999987,
-    "7_scheduler": 12.332949335000013,
-    "8_json_validator": 2.6777597769999995
-  },
-  "openai/gpt-5-codex": {
-    "1_dijkstra": 86.38025543199991,
-    "2_convex_hull": 37.86684929500008,
-    "3_lis": 9.727075501000042,
-    "4_determinant": 8.948688077000087,
-    "5_markdown_parser": 8.000620244999999,
-    "6_csv_processor": 31.738115685999976,
-    "7_scheduler": 155.32837211300003,
-    "8_json_validator": 27.551844137000035
+    "1_dijkstra": 3.8821057339999823,
+    "2_convex_hull": 4.63132335000002,
+    "3_lis": 2.5366414799999912,
+    "4_determinant": 1.642024412000028,
+    "5_markdown_parser": 2.235130207999959,
+    "6_csv_processor": 4.568896986000007,
+    "7_scheduler": 15.728725427000084,
+    "8_json_validator": 3.0146192130000564
   }
 }

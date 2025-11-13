@@ -1,9 +1,9 @@
 async function findConvexHull(points) {
-  const { sortBy, uniqWith } = await import('https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/lodash.js');
+  const _ = await import('https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/lodash.min.js').then(m => m.default);
   
   if (points.length < 3) return points;
   
-  const sorted = sortBy(uniqWith(points, (a, b) => a.x === b.x && a.y === b.y), ['x', 'y']);
+  const sorted = _.sortBy(_.uniqWith(points, _.isEqual), ['x', 'y']);
   
   if (sorted.length < 3) return sorted;
   
