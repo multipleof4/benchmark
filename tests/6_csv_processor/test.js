@@ -15,6 +15,6 @@ export default {
     const res = result[0] || {};
     const val = res.result ?? res.avg ?? res.value;
     assert.deepStrictEqual([{ department: res.department, value: val }], [{ department: 'Engineering', value: 90000 }], 'Test Failed: Aggregation incorrect.');
-    return result;
   }
 };
+
