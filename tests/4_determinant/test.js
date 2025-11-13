@@ -12,6 +12,6 @@ export default {
     const matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
     const det = await calculateDeterminant(matrix);
     assert.strictEqual(det, 0, "Test Failed: Determinant should be 0.");
-    return det;
   }
 };
+
