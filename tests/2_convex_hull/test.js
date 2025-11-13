@@ -16,5 +16,6 @@ export default {
     const hull = await findConvexHull(points);
     const sortFn = (a, b) => a.x - b.x || a.y - b.y;
     assert.deepStrictEqual(hull.sort(sortFn), expected.sort(sortFn), "Test Failed: Convex hull points do not match.");
+    return hull;
   }
 };
