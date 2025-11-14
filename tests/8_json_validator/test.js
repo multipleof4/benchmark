@@ -5,19 +5,6 @@ export default {
 // - You MUST use dynamic import() to load one or more libraries from a CDN for JSON Schema validation.
 // - Return an object: { valid: boolean, errors: array } where errors contains validation error messages if invalid.
 // - Handle nested schemas, required fields, type validation, and pattern matching.`,
-  getTestCases: () => {
-    const schema = {
-      type: 'object',
-      required: ['name', 'age'],
-      properties: {
-        name: { type: 'string', minLength: 1 },
-        age: { type: 'number', minimum: 0 },
-        email: { type: 'string', pattern: '^[^@]+@[^@]+\\.[^@]+$' }
-      }
-    };
-    const validData = { name: 'Alice', age: 30, email: 'alice@example.com' };
-    return [validData, schema];
-  },
   runTest: async (validateJSON) => {
     const assert = {
       strictEqual: (a, e, m) => { if (a !== e) throw new Error(m || `FAIL: ${a} !== ${e}`) },
@@ -43,3 +30,5 @@ export default {
     assert.ok(Array.isArray(invalidResult.errors) && invalidResult.errors.length > 0, 'Test Failed: No errors returned for invalid data.');
   }
 };
+
+
