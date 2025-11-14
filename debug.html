@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Lynchmark – Debug View</title>
+  <meta property="og:title" content="Lynchmark – Debug View">
+  <meta property="og:site_name" content="Lynchmark">
+  <meta name="description" content="Inspect generated outputs for every Lynchmark benchmark test.">
+  <meta property="og:description" content="Inspect generated outputs for every Lynchmark benchmark test.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://lynchmark.pages.dev/debug.html">
+  <link rel="canonical" href="https://lynchmark.pages.dev/debug.html">
+  <script type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@type":"WebPage",
+    "name":"Lynchmark Debug",
+    "url":"https://lynchmark.pages.dev/debug.html",
+    "description":"Debug view for inspecting LLM-generated benchmark outputs."
+  }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+    .mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <main class="max-w-2xl mx-auto flex flex-col min-h-screen p-6 lg:p-8">
+    <header class="text-center mb-10">
+      <div class="relative inline-block">
+        <h1 class="text-4xl font-bold text-gray-900 mb-2">Lynchmark Debug</h1>
+        <span class="mono pointer-events-none absolute -top-2 -right-3 inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 text-[10px] leading-none font-medium px-1.5 py-0.5 shadow-sm">
+          Last updated <time id="last-updated" class="ml-1"></time>
+        </span>
+      </div>
+      <p class="text-base text-gray-600 max-w-lg mx-auto">
+        Review exactly what each model produced for every benchmark test.
+      </p>
+    </header>
+    <div id="results-container" class="flex flex-col gap-6 flex-grow"></div>
+    <footer class="mt-10 flex justify-center">
+      <a href="https://github.com/multipleof4/lynchmark" class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900" target="_blank" rel="noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" aria-hidden="true" class="w-5 h-5 fill-current">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52 0-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+        <span class="mono text-xs font-medium">@multipleof4/lynchmark</span>
+      </a>
+    </footer>
+  </main>
+  <script type="module">
+    const get=id=>document.getElementById(id);
+    const container=get('results-container');
+    const stamp=get('last-updated');
+    const now=new Date();
+    stamp.textContent=now.toLocaleDateString('en-US',{month:'short',year:'numeric'});
+    stamp.dateTime=now.toISOString().split('T')[0];
+    const esc=s=>s.replace(/[&<>]/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;' }[c]));
+    const load=path=>fetch(path).then(r=>r.ok?r.text():null).catch(()=>null);
+    const run=async()=>{
+      const [readme,genTimes]=await Promise.all([
+        fetch('./README').then(r=>r.text()),
+        fetch('./results.json').then(r=>r.json())
+      ]);
+      const models=readme.match(/<!-- MODELS_START -->\n([\s\S]+?)\n<!-- MODELS_END -->/)[1].trim().split('\n');
+      const tests=[...new Set(Object.values(genTimes).flatMap(o=>Object.keys(o||{})))].sort();
+      if(!tests.length){
+        container.innerHTML='<p class="text-center text-sm text-gray-500">No tests available.</p>';
+        return;
+      }
+      for(const model of models){
+        const sModel=model.replace(/[\/:]/g,'_');
+        const card=document.createElement('section');
+        card.className='rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden';
+        card.innerHTML=`
+          <div class="bg-gray-50 px-5 py-3 border-b border-gray-200">
+            <p class="mono text-sm text-gray-700 font-medium">${model}</p>
+          </div>
+          <ul class="p-4 space-y-3" id="list-${sModel}"></ul>`;
+        container.appendChild(card);
+        const list=get(`list-${sModel}`);
+        for(const test of tests){
+          const li=document.createElement('li');
+          li.className='list-none';
+          list.appendChild(li);
+          const code=await load(`./tests/${test}/outputs/${sModel}.js`);
+          const body=code?`<pre class="bg-gray-900 text-green-100 text-xs rounded-lg p-4 overflow-x-auto"><code>${esc(code)}</code></pre>`:`<p class="text-sm text-red-500">No generated output found.</p>`;
+          li.innerHTML=`
+            <details class="rounded-xl border border-gray-200 bg-white p-4">
+              <summary class="flex items-center gap-3 text-sm cursor-pointer select-none">
+                ${code?'✅':'⚠️'}
+                <span class="font-medium text-gray-800">${test}</span>
+                <span class="mono text-gray-500 ml-auto">${code?'View code':'Missing output'}</span>
+              </summary>
+              <div class="mt-3">${body}</div>
+            </details>`;
+        }
+      }
+    };
+    run();
+  </script>
+</body>
+</html>
