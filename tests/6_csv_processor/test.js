@@ -14,8 +14,6 @@ export default {
     const result = await processCSV(csv, config);
     const res = result[0] || {};
     const val = res.result ?? res.avg ?? res.value;
-    assert.deepStrictEqual([{ department: res.department, value: val }], [{ department: 'Engineering', value: 90000 }], 'Test Failed: Aggregation incorrect.');
+    assert.deepStrictEqual([{ department: res.department, result: val }], [{ department: 'Engineering', result: 90000 }], 'Test Failed: Aggregation incorrect.');
   }
 };
-
-
