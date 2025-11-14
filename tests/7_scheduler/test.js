@@ -5,8 +5,11 @@ export default {
 // - Calendar format: [{ start: 'ISODateString', end: 'ISODateString' }, ...]
 // - Constraints format: { durationMinutes: number, searchRange: { start: 'ISODateString', end: 'ISODateString' }, workHours: { start: 'HH:mm', end: 'HH:mm' } }
 // - You MUST use a dynamic import() to load one or more libraries from a CDN for date/time manipulation.
-// - The function should find all non-overlapping time slots of 'durationMinutes' where both parties are free, within their working hours, and within the search range.
-// - Return an array of available slots, each as an object: { start: 'ISODateString', end: 'ISODateString' }`,
+// - Merge overlapping busy times from both calendars. Find all free time periods where both are available.
+// - Within each free period, generate ALL possible non-overlapping consecutive time slots of exactly 'durationMinutes' length.
+// - Only include slots that fall completely within work hours (workHours.start to workHours.end) and the search range.
+// - Return an array of available slots in chronological order, each as: { start: 'ISODateString', end: 'ISODateString' }
+// - Each slot must be exactly durationMinutes long. Slots must not overlap. Slots should be consecutive (next slot starts where previous ends).`,
   runTest: async (findAvailableSlots) => {
     const assert = {
       deepStrictEqual: (a, e, m) => { if (JSON.stringify(a) !== JSON.stringify(e)) throw new Error(m || `FAIL: ${JSON.stringify(a)} !== ${JSON.stringify(e)}`) },
@@ -36,5 +39,3 @@ export default {
     assert.deepStrictEqual(result, expected, 'Test Failed: Incorrect slots found.');
   }
 };
-
-
