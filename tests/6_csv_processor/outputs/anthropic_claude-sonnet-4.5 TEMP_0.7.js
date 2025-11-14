@@ -1,32 +1,24 @@
-async function processCSV(csvString, config) {
-  const { parse } = await import('https://cdn.skypack.dev/papaparse@5.4.1');
+const processCSV = async (csv, { filterColumn, filterValue, groupBy, aggregateColumn, operation }) => {
+  const { parse } = await import('https://cdn.skypack.dev/csv-parse/sync');
   
-  const { data } = parse(csvString, { header: true, skipEmptyLines: true });
+  const records = parse(csv, { columns: true, skip_empty_lines: true });
   
-  const filtered = data.filter(row => 
-    String(row[config.filterColumn]) === String(config.filterValue)
-  );
+  const filtered = records.filter(r => r[filterColumn] == filterValue);
   
-  const grouped = filtered.reduce((acc, row) => {
-    const key = row[config.groupBy];
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(row);
+  const groups = filtered.reduce((acc, row) => {
+    const key = row[groupBy];
+    (acc[key] ??= []).push(row);
     return acc;
   }, {});
   
-  return Object.entries(grouped).map(([key, rows]) => {
-    let result;
-    const vals = rows.map(r => parseFloat(r[config.aggregateColumn]) || 0);
+  return Object.entries(groups).map(([key, rows]) => {
+    const vals = rows.map(r => Number(r[aggregateColumn]) || 0);
+    const sum = vals.reduce((a, b) => a + b, 0);
     
-    if (config.operation === 'sum') {
-      result = vals.reduce((a, b) => a + b, 0);
-    } else if (config.operation === 'avg') {
-      result = vals.reduce((a, b) => a + b, 0) / vals.length;
-    } else {
-      result = rows.length;
-    }
-    
-    return { [config.groupBy]: key, result };
+    return {
+      [groupBy]: key,
+      result: operation === 'sum' ? sum : operation === 'avg' ? sum / vals.length : vals.length
+    };
   });
-}
+};
 export default processCSV;

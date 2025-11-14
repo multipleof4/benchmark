@@ -1,35 +1,17 @@
-const validateJSON = async (jsonObject, schemaObject) => {
+const validateJSON = async (data, schema) => {
   try {
-    const [{
-      default: Ajv
-    }, {
-      default: addFormats
-    }] = await Promise.all([
-      import('https://esm.sh/ajv'),
-      import('https://esm.sh/ajv-formats')
-    ]);
-
-    const ajv = new Ajv({
-      allErrors: true
-    });
-    addFormats(ajv);
-
-    const validate = ajv.compile(schemaObject);
-    const valid = validate(jsonObject);
-
-    const errors = valid ? [] : validate.errors.map(
-      e => `${e.instancePath || '<root>'}: ${e.message}`
-    );
+    const { default: Ajv } = await import('https://esm.sh/ajv@8');
+    const validate = new Ajv({ allErrors: true }).compile(schema);
+    const valid = validate(data);
 
     return {
       valid,
-      errors
+      errors: valid ? [] : (validate.errors ?? []).map(
+        ({ instancePath, message }) => `${instancePath || 'root'} ${message}`.trim()
+      ),
     };
   } catch (e) {
-    return {
-      valid: false,
-      errors: [`Validation setup failed: ${e.message}`]
-    };
+    return { valid: false, errors: [e.message] };
   }
 };
 export default validateJSON;

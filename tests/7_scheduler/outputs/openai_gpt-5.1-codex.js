@@ -1,55 +1,52 @@
-const luxon=import('https://cdn.skypack.dev/luxon');
+let luxon$
 
-const findAvailableSlots=async(c1,c2,k)=>{
-  const {DateTime}=await luxon;
-  const {durationMinutes:d,searchRange:r,workHours:w}=k;
-  const zone=DateTime.fromISO(r.start).zoneName;
-  const iso=v=>DateTime.fromISO(v,{zone});
-  const rangeStart=iso(r.start);
-  const rangeEnd=iso(r.end);
-  if(rangeEnd<=rangeStart)return[];
-  const [hs,ms]=w.start.split(':').map(Number);
-  const [he,me]=w.end.split(':').map(Number);
-  const daysEnd=rangeEnd.startOf('day');
-  const windows=[];
-  for(let day=rangeStart.startOf('day');day<=daysEnd;day=day.plus({days:1})){
-    let s=day.set({hour:hs,minute:ms,second:0,millisecond:0});
-    let e=day.set({hour:he,minute:me,second:0,millisecond:0});
-    if(e<=s||e<=rangeStart||s>=rangeEnd)continue;
-    if(s<rangeStart)s=rangeStart;
-    if(e>rangeEnd)e=rangeEnd;
-    windows.push({start:s,end:e});
+const findAvailableSlots = async (calA, calB, cfg) => {
+  const {DateTime, Interval} = await (luxon$ ||= import('https://cdn.skypack.dev/luxon'))
+  const {durationMinutes: d, searchRange: r, workHours: w} = cfg
+  const s = DateTime.fromISO(r.start)
+  const e = DateTime.fromISO(r.end)
+  const range = Interval.fromDateTimes(s, e)
+  const [sh, sm] = w.start.split(':').map(Number)
+  const [eh, em] = w.end.split(':').map(Number)
+  const busy = [...calA, ...calB]
+    .map(({start, end}) => ({start: DateTime.fromISO(start), end: DateTime.fromISO(end)}))
+    .filter(v => v.end > s && v.start < e)
+    .map(v => ({start: v.start < s ? s : v.start, end: v.end > e ? e : v.end}))
+    .sort((a, b) => a.start.valueOf() - b.start.valueOf())
+  const merged = []
+  for (const slot of busy) {
+    const last = merged.at(-1)
+    if (!last || slot.start > last.end) merged.push({...slot})
+    else if (slot.end > last.end) last.end = slot.end
   }
-  if(!windows.length)return[];
-  const busy=[...c1,...c2].map(v=>{
-    let s=iso(v.start),e=iso(v.end);
-    if(e<=s||e<=rangeStart||s>=rangeEnd)return null;
-    if(s<rangeStart)s=rangeStart;
-    if(e>rangeEnd)e=rangeEnd;
-    return{start:s,end:e};
-  }).filter(Boolean).sort((a,b)=>a.start.valueOf()-b.start.valueOf());
-  const merged=[];
-  for(const slot of busy){
-    const last=merged[merged.length-1];
-    if(last&&slot.start<=last.end){
-      if(slot.end>last.end)last.end=slot.end;
-    }else merged.push({start:slot.start,end:slot.end});
+  const out = []
+  const emit = (from, to) => {
+    if (!(to > from)) return
+    for (let st = from, en = st.plus({minutes: d}); en <= to; st = en, en = st.plus({minutes: d}))
+      out.push({start: st.toISO(), end: en.toISO()})
   }
-  const out=[];
-  const push=(s,e)=>e.diff(s,'minutes').minutes>=d&&out.push({start:s.toISO(),end:e.toISO()});
-  for(const wSlot of windows){
-    let cur=wSlot.start;
-    for(const b of merged){
-      if(b.start>=wSlot.end)break;
-      if(b.end<=wSlot.start)continue;
-      const bs=b.start>wSlot.start?b.start:wSlot.start;
-      const be=b.end<wSlot.end?b.end:wSlot.end;
-      if(bs>cur)push(cur,bs);
-      if(be>cur)cur=be;
-      if(cur>=wSlot.end)break;
+  let i = 0
+  for (let day = s.startOf('day'); day < e; day = day.plus({days: 1})) {
+    const ws = day.set({hour: sh, minute: sm, second: 0, millisecond: 0})
+    const we = day.set({hour: eh, minute: em, second: 0, millisecond: 0})
+    const block = Interval.fromDateTimes(ws, we).intersection(range)
+    if (!block) continue
+    while (i < merged.length && merged[i].end <= block.start) i++
+    let cursor = block.start
+    for (let j = i; j < merged.length && merged[j].start < block.end; j++) {
+      const bs = merged[j].start > block.start ? merged[j].start : block.start
+      if (bs > cursor) {
+        emit(cursor, bs)
+        cursor = bs
+      }
+      if (merged[j].end > cursor) {
+        const be = merged[j].end < block.end ? merged[j].end : block.end
+        cursor = be
+      }
+      if (cursor >= block.end) break
     }
-    if(cur<wSlot.end)push(cur,wSlot.end);
+    if (cursor < block.end) emit(cursor, block.end)
   }
-  return out;
-};
+  return out
+}
 export default findAvailableSlots;

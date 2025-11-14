@@ -21,6 +21,9 @@ async function findConvexHull(points) {
     return hull;
   };
   
-  return [...buildHull(sorted), ...buildHull([...sorted].reverse())];
+  const lower = buildHull(sorted);
+  const upper = buildHull([...sorted].reverse());
+  
+  return [...lower, ...upper];
 }
 export default findConvexHull;

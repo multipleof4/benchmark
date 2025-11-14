@@ -1,10 +1,7 @@
-async function findLISLength(nums){
-  const {bisectLeft}=await import('https://cdn.jsdelivr.net/npm/d3-array@3/+esm')
-  const tails=[]
-  for(const n of nums){
-    const i=bisectLeft(tails,n)
-    tails[i]=n
-  }
-  return tails.length
+async function findLISLength(a){
+  const {bisectLeft:b}=await import('https://cdn.jsdelivr.net/npm/d3-array@3/+esm')
+  const t=[]
+  for(const n of a)t[b(t,n)]=n
+  return t.length
 }
 export default findLISLength;

@@ -1,21 +1,16 @@
-const libs=(()=>{let c;return()=>c||(c=Promise.all([
-import('https://cdn.jsdelivr.net/npm/d3-dsv@3/+esm'),
-import('https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/groupBy.js')
-]).then(([dsv,gb])=>({parse:dsv.csvParse,groupBy:gb.default||gb})));})();
-
-const toNum=v=>{const n=+v;return Number.isFinite(n)?n:0};
-
-async function processCSV(csv,opts){
-  const {parse,groupBy}=await libs();
-  const rows=parse(csv);
-  const {filterColumn:fc,filterValue:fv,groupBy:gc,aggregateColumn:ac,operation:op}=opts;
-  const pool=groupBy(rows.filter(r=>r[fc]==fv),r=>r[gc]??'');
-  const calc={
-    sum:x=>x.reduce((t,r)=>t+toNum(r[ac]),0),
-    avg:x=>x.length?x.reduce((t,r)=>t+toNum(r[ac]),0)/x.length:0,
-    count:x=>x.length
-  }[op];
-  if(!calc) throw new Error('Unsupported operation');
-  return Object.entries(pool).map(([k,x])=>({[gc]:k,result:calc(x)}));
+async function processCSV(csv,cfg){
+ const [{Papa},{groupBy:gb}]=await Promise.all([
+  import('https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.mjs'),
+  import('https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/lodash.js')
+ ])
+ const {filterColumn:fc,filterValue:fv,groupBy:gbk,aggregateColumn:ac,operation:op}=cfg
+ const rows=Papa.parse(csv,{header:!0,skipEmptyLines:!0}).data.filter(r=>r&&r[fc]==fv)
+ const grouped=gb(rows,r=>r?.[gbk]??'')
+ return Object.entries(grouped).map(([k,arr])=>{
+  const nums=arr.map(r=>{const n=+r[ac];return Number.isFinite(n)?n:0})
+  const sum=nums.reduce((a,b)=>a+b,0)
+  const result=op==='sum'?sum:op==='avg'?sum/nums.length:arr.length
+  return {[gbk]:k,result}
+ })
 }
 export default processCSV;
