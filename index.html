@@ -71,122 +71,63 @@
     </footer>
   </main>
   <script type="module">
-    const get=id=>document.getElementById(id);
-    const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-    const container=get('results-container');
-    const updatedEl=get('last-updated');
-    const now=new Date();
-    updatedEl.textContent=now.toLocaleDateString('en-US',{month:'short',year:'numeric'});
-    updatedEl.dateTime=now.toISOString().split('T')[0];
+    const get = id => document.getElementById(id);
+    const container = get('results-container');
+    const updatedEl = get('last-updated');
+    const now = new Date();
+    updatedEl.textContent = now.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    updatedEl.dateTime = now.toISOString().split('T')[0];
 
-    const run=async()=>{
-      const readme=await fetch('./README').then(r=>r.text());
-      const genTimes=await fetch('./results.json').then(r=>r.json());
-      const models=readme.match(/<!-- MODELS_START -->\n([\s\S]+?)\n<!-- MODELS_END -->/)[1].trim().split('\n');
-      const tests=[...new Set(Object.values(genTimes).flatMap(Object.keys))].sort();
-      const stats=[];
-
-      for(const model of models){
-        const sModel=model.replace(/[\/:]/g,'_');
-        const card=document.createElement('section');
-        card.className='rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden';
-        card.innerHTML=`
-          <div class="bg-gray-900 text-white px-5 py-4 flex flex-col gap-2">
-            <div class="flex items-center justify-between gap-4">
-              <p class="mono text-sm font-medium truncate">${model}</p>
-              <span class="mono text-xs font-semibold px-3 py-1 rounded-full bg-white/10 border border-white/20" id="summary-${sModel}">Scoring…</span>
-            </div>
-            <p class="text-xs text-white/70" id="badge-${sModel}">Benchmarking ${tests.length} tasks</p>
+    const run = async () => {
+      const readme = await fetch('./README').then(r => r.text());
+      const genTimes = await fetch('./results.json').then(r => r.json());
+      const models = readme.match(/<!-- MODELS_START -->\n([\s\S]+?)\n<!-- MODELS_END -->/)[1].trim().split('\n');
+      const tests = [...new Set(Object.values(genTimes).flatMap(Object.keys))].sort();
+      
+      for (const model of models) {
+        const sModel = model.replace(/[\/:]/g, '_');
+        const card = document.createElement('section');
+        card.className = 'rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden';
+        card.innerHTML = `
+          <div class="bg-gray-50 px-5 py-3 border-b border-gray-200">
+            <p class="mono text-sm text-gray-700 font-medium">${model}</p>
           </div>
-          <div class="p-4 overflow-x-auto">
-            <table class="w-full text-sm text-left border-separate border-spacing-y-1">
-              <thead>
-                <tr class="text-gray-500 uppercase text-xs">
-                  <th class="px-3 py-2 font-semibold">Test</th>
-                  <th class="px-3 py-2 font-semibold">Result</th>
-                  <th class="px-3 py-2 font-semibold text-right">Time</th>
-                </tr>
-              </thead>
-              <tbody id="body-${sModel}"></tbody>
-            </table>
-          </div>`;
+          <ul class="p-4 space-y-2" id="list-${sModel}"></ul>`;
         container.appendChild(card);
-        const body=get(`body-${sModel}`);
-        const summaryEl=get(`summary-${sModel}`);
-        let passes=0,attempted=0;
-        const durations=[];
-        for(const test of tests){
-          const row=document.createElement('tr');
-          row.className='bg-gray-50 text-gray-800 rounded-xl shadow-sm';
-          row.innerHTML=`
-            <td class="px-3 py-2 font-medium flex items-center gap-2">
-              <svg class="animate-spin h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span>${test}</span>
-            </td>
-            <td class="px-3 py-2 mono text-gray-500">Running…</td>
-            <td class="px-3 py-2 mono text-gray-500 text-right">…</td>`;
-          body.appendChild(row);
-          const time=genTimes[model]?.[test];
-          if(time==null){
-            row.innerHTML=`
-              <td class="px-3 py-2 font-medium flex items-center gap-2 text-gray-500">— <span>${test}</span></td>
-              <td class="px-3 py-2 mono text-gray-500">Not run</td>
-              <td class="px-3 py-2 mono text-gray-500 text-right">N/A</td>`;
+        const list = get(`list-${sModel}`);
+
+        for (const test of tests) {
+          const li = document.createElement('li');
+          li.className = 'flex items-center gap-3 text-sm';
+          list.appendChild(li);
+          const time = genTimes[model]?.[test];
+
+          if (time === null) {
+            li.innerHTML = `— <span class="font-medium text-gray-800">${test}</span><span class="mono text-gray-500 ml-auto">N/A</span>`;
             continue;
           }
-          attempted++;
-          let status='✅',error=null;
-          try{
-            const testP=(async()=>{
-              const tMod=await import(`./tests/${test}/test.js`);
-              const lMod=await import(`./tests/${test}/outputs/${sModel}.js`);
+          
+          li.innerHTML = `<svg class="animate-spin h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="font-medium text-gray-800">${test}</span><span class="mono text-gray-500 ml-auto">...</span>`;
+          
+          let status = '✅';
+          try {
+            const testP = (async () => {
+              const tMod = await import(`./tests/${test}/test.js`);
+              const lMod = await import(`./tests/${test}/outputs/${sModel}.js`);
               await tMod.default.runTest(lMod.default);
             })();
-            await Promise.race([testP,new Promise((_,r)=>setTimeout(()=>r(new Error('Timeout')),12000))]);
-            passes++;
-          }catch(e){
-            console.error(`${model} - ${test}:`,e);
-            status='❌';
-            error=e.message||'Failed';
+            await Promise.race([testP, new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 12000))]);
+          } catch (e) {
+            console.error(`${model} - ${test}: `, e);
+            status = '❌';
           }
-          if(typeof time==='number')durations.push(time);
-          const timeStr=typeof time==='number'?`${time.toFixed(3)}s`:'N/A';
-          const detail=status==='✅'?'Passed':`Failed – ${esc(error)}`;
-          row.innerHTML=`
-            <td class="px-3 py-2 font-semibold flex items-center gap-2 ${status==='✅'?'text-green-600':'text-red-600'}">
-              <span>${status}</span><span class="text-gray-900">${test}</span>
-            </td>
-            <td class="px-3 py-2 text-gray-700">${detail}</td>
-            <td class="px-3 py-2 mono text-right text-gray-900">${timeStr}</td>`;
+          const timeStr = time?.toFixed(3) ?? 'N/A';
+          li.innerHTML = `${status} <span class="font-medium text-gray-800">${test}</span><span class="mono text-gray-500 ml-auto">${timeStr}s</span>`;
         }
-        const avg=durations.length?(durations.reduce((a,b)=>a+b,0)/durations.length):null;
-        const totalBase=attempted||tests.length;
-        const passRate=totalBase?Math.round((passes/totalBase)*100):0;
-        const score=Math.max(0,Math.round(passes*100-(avg??120)*10));
-        const summary=`${passes}/${totalBase} passed · Avg ${avg?avg.toFixed(2)+'s':'N/A'} · ${score} pts`;
-        summaryEl.textContent=summary;
-        get(`badge-${sModel}`).textContent=`${attempted} tests attempted · ${passRate}% pass rate`;
-        const overall=document.createElement('tr');
-        overall.className='bg-amber-50 text-amber-900 font-semibold';
-        overall.innerHTML=`
-          <td class="px-3 py-2 flex items-center gap-2">
-            <span>Σ</span><span>Overall</span>
-          </td>
-          <td class="px-3 py-2">Pass rate ${passRate}% (${passes}/${totalBase})</td>
-          <td class="px-3 py-2 mono text-right">${avg?avg.toFixed(2)+'s':'N/A'} · ${score} pts</td>`;
-        body.appendChild(overall);
-        stats.push({model,score,avg:avg??Number.POSITIVE_INFINITY,passes,summaryEl});
-      }
-      if(stats.length){
-        const best=[...stats].sort((a,b)=>b.score-a.score||a.avg-b.avg||b.passes-a.passes)[0];
-        best.summaryEl.innerHTML=`🏆 ${best.summaryEl.textContent}`;
-        best.summaryEl.classList.add('bg-amber-100','text-amber-700','border','border-amber-300');
       }
     };
     run();
   </script>
 </body>
 </html>
+
