@@ -71,63 +71,82 @@
     </footer>
   </main>
   <script type="module">
-    const get = id => document.getElementById(id);
-    const container = get('results-container');
-    const updatedEl = get('last-updated');
-    const now = new Date();
-    updatedEl.textContent = now.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-    updatedEl.dateTime = now.toISOString().split('T')[0];
-
-    const run = async () => {
-      const readme = await fetch('./README').then(r => r.text());
-      const genTimes = await fetch('./results.json').then(r => r.json());
-      const models = readme.match(/<!-- MODELS_START -->\n([\s\S]+?)\n<!-- MODELS_END -->/)[1].trim().split('\n');
-      const tests = [...new Set(Object.values(genTimes).flatMap(Object.keys))].sort();
-      
-      for (const model of models) {
-        const sModel = model.replace(/[\/:]/g, '_');
-        const card = document.createElement('section');
-        card.className = 'rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden';
-        card.innerHTML = `
+    const get=id=>document.getElementById(id);
+    const container=get('results-container');
+    const updatedEl=get('last-updated');
+    const now=new Date();
+    updatedEl.textContent=now.toLocaleDateString('en-US',{month:'short',year:'numeric'});
+    updatedEl.dateTime=now.toISOString().split('T')[0];
+    const grade=p=>p>=.95?'A+':p>=.9?'A':p>=.85?'A-':p>=.75?'B+':p>=.65?'B':p>=.5?'B-':'C';
+    const run=async()=>{
+      const readme=await fetch('./README').then(r=>r.text());
+      const genTimes=await fetch('./results.json').then(r=>r.json());
+      const models=readme.match(/<!-- MODELS_START -->\n([\s\S]+?)\n<!-- MODELS_END -->/)[1].trim().split('\n');
+      const tests=[...new Set(Object.values(genTimes).flatMap(Object.keys))].sort();
+      for(const model of models){
+        const sModel=model.replace(/[\/:]/g,'_');
+        const card=document.createElement('section');
+        card.className='rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden';
+        card.innerHTML=`
           <div class="bg-gray-50 px-5 py-3 border-b border-gray-200">
             <p class="mono text-sm text-gray-700 font-medium">${model}</p>
           </div>
           <ul class="p-4 space-y-2" id="list-${sModel}"></ul>`;
         container.appendChild(card);
-        const list = get(`list-${sModel}`);
-
-        for (const test of tests) {
-          const li = document.createElement('li');
-          li.className = 'flex items-center gap-3 text-sm';
+        const list=get(`list-${sModel}`);
+        let pass=0,fail=0;
+        for(const test of tests){
+          const li=document.createElement('li');
+          li.className='flex items-center gap-3 text-sm';
           list.appendChild(li);
-          const time = genTimes[model]?.[test];
-
-          if (time === null) {
-            li.innerHTML = `— <span class="font-medium text-gray-800">${test}</span><span class="mono text-gray-500 ml-auto">N/A</span>`;
+          const time=genTimes[model]?.[test];
+          if(time===null){
+            li.innerHTML=`— <span class="font-medium text-gray-800">${test}</span><span class="mono text-gray-500 ml-auto">N/A</span>`;
             continue;
           }
-          
-          li.innerHTML = `<svg class="animate-spin h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="font-medium text-gray-800">${test}</span><span class="mono text-gray-500 ml-auto">...</span>`;
-          
-          let status = '✅';
-          try {
-            const testP = (async () => {
-              const tMod = await import(`./tests/${test}/test.js`);
-              const lMod = await import(`./tests/${test}/outputs/${sModel}.js`);
+          li.innerHTML=`<svg class="animate-spin h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="font-medium text-gray-800">${test}</span><span class="mono text-gray-500 ml-auto">...</span>`;
+          let status='✅';
+          try{
+            const testP=(async()=>{
+              const tMod=await import(`./tests/${test}/test.js`);
+              const lMod=await import(`./tests/${test}/outputs/${sModel}.js`);
               await tMod.default.runTest(lMod.default);
             })();
-            await Promise.race([testP, new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 12000))]);
-          } catch (e) {
-            console.error(`${model} - ${test}: `, e);
-            status = '❌';
+            await Promise.race([testP,new Promise((_,r)=>setTimeout(()=>r(new Error('Timeout')),12000))]);
+            pass++;
+          }catch(e){
+            console.error(`${model} - ${test}: `,e);
+            status='❌';
+            fail++;
           }
-          const timeStr = time?.toFixed(3) ?? 'N/A';
-          li.innerHTML = `${status} <span class="font-medium text-gray-800">${test}</span><span class="mono text-gray-500 ml-auto">${timeStr}s</span>`;
+          const timeStr=time?.toFixed(3)??'N/A';
+          li.innerHTML=`${status} <span class="font-medium text-gray-800">${test}</span><span class="mono text-gray-500 ml-auto">${timeStr}s</span>`;
         }
+        const total=pass+fail;
+        const pct=total?pass/total:0;
+        const summary=document.createElement('li');
+        summary.className='pt-4 border-t border-gray-100 mt-4';
+        summary.innerHTML=`
+          <div class="p-4 rounded-xl bg-gradient-to-r from-indigo-50 via-white to-emerald-50 border border-indigo-100 shadow-inner flex flex-col gap-3">
+            <div class="flex items-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Performance Summary
+              <span class="mono text-gray-400 ml-auto">${total} tests</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="flex-1">
+                <p class="text-sm text-gray-600">Right / Wrong</p>
+                <p class="text-lg font-semibold text-gray-900">${pass} / ${fail}</p>
+              </div>
+              <div class="flex flex-col items-end">
+                <p class="text-sm text-gray-600">Grade</p>
+                <span class="text-2xl font-bold text-indigo-600">${grade(pct)}</span>
+              </div>
+            </div>
+          </div>`;
+        list.appendChild(summary);
       }
     };
     run();
   </script>
 </body>
 </html>
-
