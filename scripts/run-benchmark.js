@@ -8,6 +8,7 @@ const CWD = process.cwd();
 const README_PATH = path.join(CWD, 'README');
 const TESTS_DIR = path.join(CWD, 'tests');
 const RESULTS_PATH = path.join(CWD, 'results.json');
+const getArg = name => { const i = process.argv.indexOf(name); return i > -1 ? process.argv[i + 1] : null; };
 
 const getLlmCode = async (prompt, model, functionName, temperature) => {
   const start = performance.now();
@@ -30,20 +31,38 @@ const getLlmCode = async (prompt, model, functionName, temperature) => {
 
 const main = async () => {
   const readme = await fs.readFile(README_PATH, 'utf-8');
-  const models = readme.match(/<!-- MODELS_START -->\n([\s\S]+?)\n<!-- MODELS_END -->/)[1].trim().split('\n');
+  const allModels = readme.match(/<!-- MODELS_START -->\n([\s\S]+?)\n<!-- MODELS_END -->/)[1].trim().split('\n');
   const percentage = parseInt(readme.match(/RUN_PERCENTAGE:\s*(\d+)/)?.[1] ?? '100', 10);
   const sharedPrompt = readme.match(/SHARED_PROMPT:\s*"([\s\S]+?)"/)?.[1] ?? '';
+  
+  const singleModel = getArg('--model');
+  if (singleModel && !allModels.includes(singleModel)) {
+    throw new Error(`Model "${singleModel}" not found in README.md.`);
+  }
+  const modelsToRun = singleModel ? [singleModel] : allModels;
+
   const allTestDirs = (await fs.readdir(TESTS_DIR, { withFileTypes: true }))
     .filter(d => d.isDirectory()).map(d => d.name).sort();
 
-  await Promise.all(
-    allTestDirs.map(dir => fs.rm(path.join(TESTS_DIR, dir, 'outputs'), { recursive: true, force: true }))
-  );
+  if (singleModel) {
+    const sModel = singleModel.replace(/[\/:]/g, '_');
+    await Promise.all(allTestDirs.map(dir => 
+      fs.rm(path.join(TESTS_DIR, dir, 'outputs', `${sModel}.js`), { force: true })
+    ));
+  } else {
+    await Promise.all(allTestDirs.map(dir => 
+      fs.rm(path.join(TESTS_DIR, dir, 'outputs'), { recursive: true, force: true })
+    ));
+  }
 
   const testsToRun = allTestDirs.slice(0, Math.ceil(allTestDirs.length * (percentage / 100)));
-  const genData = {};
+  
+  let genData = {};
+  if (singleModel) {
+    try { genData = JSON.parse(await fs.readFile(RESULTS_PATH, 'utf-8')); } catch {}
+  }
 
-  for (const modelSpec of models) {
+  for (const modelSpec of modelsToRun) {
     const [model, tempStr] = modelSpec.split(' TEMP:');
     const temperature = tempStr ? parseFloat(tempStr) : undefined;
 
@@ -51,12 +70,7 @@ const main = async () => {
     for (const dir of testsToRun) {
       const { prompt, functionName } = (await import(pathToFileURL(path.join(TESTS_DIR, dir, 'test.js')))).default;
       console.log(`Generating ${dir} for ${modelSpec}...`);
-      const result = await getLlmCode(
-        `${sharedPrompt}\n\n${prompt.trim()}`,
-        model,
-        functionName,
-        temperature
-      );
+      const result = await getLlmCode(`${sharedPrompt}\n\n${prompt.trim()}`, model, functionName, temperature);
       
       genData[modelSpec][dir] = result?.duration ?? null;
       if (!result) continue;
@@ -72,4 +86,3 @@ const main = async () => {
 };
 
 main().catch(console.error);
-
