@@ -42,5 +42,16 @@
     "7_scheduler": 12.446870330999955,
     "8_json_validator": 2.8953664760000537,
     "9_stream_visualizer": 5.022439357000054
+  },
+  "moonshotai/kimi-k2-thinking": {
+    "1_dijkstra": 34.72660079400001,
+    "2_convex_hull": 42.421906253,
+    "3_lis": 52.291474074000014,
+    "4_determinant": 37.432558806,
+    "5_markdown_parser": 35.437114885999996,
+    "6_csv_processor": 91.85763109999999,
+    "7_scheduler": 184.65146969499997,
+    "8_json_validator": 81.96185510699998,
+    "9_stream_visualizer": 31.27018206100003
   }
 }
