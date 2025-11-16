@@ -64,5 +64,16 @@
     "7_scheduler": 82.133111714,
     "8_json_validator": 31.42142794699996,
     "9_stream_visualizer": 35.74114956699999
+  },
+  "openrouter/sherlock-dash-alpha": {
+    "1_dijkstra": 2.7058817040000003,
+    "2_convex_hull": 3.9343546879999995,
+    "3_lis": 1.2894778209999995,
+    "4_determinant": 0.611742537,
+    "5_markdown_parser": 4.020213965999999,
+    "6_csv_processor": 3.107556931000001,
+    "7_scheduler": 7.806581231,
+    "8_json_validator": 1.4850442509999993,
+    "9_stream_visualizer": 2.5679872179999985
   }
 }
