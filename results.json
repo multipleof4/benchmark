@@ -53,5 +53,16 @@
     "7_scheduler": 184.65146969499997,
     "8_json_validator": 81.96185510699998,
     "9_stream_visualizer": 31.27018206100003
+  },
+  "openrouter/sherlock-think-alpha": {
+    "1_dijkstra": 34.012272204,
+    "2_convex_hull": 47.377176928,
+    "3_lis": 18.49963934400001,
+    "4_determinant": 20.327296623999995,
+    "5_markdown_parser": 34.069916891999995,
+    "6_csv_processor": 19.902450771000005,
+    "7_scheduler": 82.133111714,
+    "8_json_validator": 31.42142794699996,
+    "9_stream_visualizer": 35.74114956699999
   }
 }
