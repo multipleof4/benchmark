@@ -28,7 +28,6 @@
     (async()=>{
       const readme=await fetch('./README').then(r=>r.text());
       const genTimes=await fetch('./results.json').then(r=>r.json());
-      // Extract Gemini models using the specific block
       const models=readme.match(/<!-- GEMINI_START -->\n([\s\S]+?)\n<!-- MODELS_END -->/)[1].trim().split('\n').filter(Boolean);
       const tests=[...new Set(Object.values(genTimes).flatMap(Object.keys))].sort();
       
@@ -56,7 +55,8 @@
             await Promise.race([
               (async()=>{
                 const tMod=await import(`./tests/${test}/test.js`);
-                const lMod=await import(`./tests/${test}/outputs/${sModel}.js`);
+                // Import from dedicated gemini output folder
+                const lMod=await import(`./tests/${test}/outputs_gemini/${sModel}.js`);
                 await tMod.default.runTest(lMod.default);
               })(),
               new Promise((_,r)=>setTimeout(()=>r(new Error('Timeout')),12000))
