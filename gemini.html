@@ -30,11 +30,13 @@
       const genTimes=await fetch('./results.json').then(r=>r.json());
       const models=readme.match(/<!-- GEMINI_START -->\n([\s\S]+?)\n<!-- MODELS_END -->/)[1].trim().split('\n').filter(Boolean);
       const tests=[...new Set(Object.values(genTimes).flatMap(Object.keys))].sort();
-      const tStats={};
+      let [wSum, wTot] = [0, 0];
       
       for(const model of models){
         const sModel=model.replace(/[\/:]/g,'_');
-        const temp=model.split('TEMP:')[1]?.trim();
+        const tStr=model.split('TEMP:')[1];
+        const tVal=tStr?parseFloat(tStr):NaN;
+        
         const card=document.createElement('section');
         card.className='rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden';
         card.innerHTML=`<div class="bg-gray-50 px-5 py-3 border-b border-gray-200"><p class="mono text-sm text-gray-700 font-medium">${model}</p></div><ul class="p-4 space-y-2" id="list-${sModel}"></ul>`;
@@ -67,18 +69,18 @@
           li.innerHTML=`${status} <span class="font-medium text-gray-800">${test}</span><span class="mono text-gray-500 ml-auto">${time.toFixed(3)}s</span>`;
         }
         const ratio=tests.length?passed/tests.length:0;
-        if(temp){tStats[temp]??={p:0,t:0};tStats[temp].p+=passed;tStats[temp].t+=tests.length}
+        if(!isNaN(tVal)){wSum+=tVal*ratio;wTot+=ratio;}
         const grade=gradeOf(ratio);
         const scoreLi=document.createElement('li');
         scoreLi.className='mt-3 pt-3 border-t border-gray-200 flex items-center text-sm justify-between';
         scoreLi.innerHTML=`<span class="text-gray-600">Score</span><span class="flex items-center gap-3"><span class="mono text-gray-900 font-semibold">${passed}/${tests.length}</span><span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800">${grade}</span></span>`;
         list.appendChild(scoreLi);
       }
-      if(Object.keys(tStats).length){
-        const best=Object.entries(tStats).sort(([,a],[,b])=>b.p/b.t-a.p/a.t)[0];
+      if(wTot>0){
+        const optimal=(wSum/wTot).toFixed(4);
         const statDiv=document.createElement('div');
         statDiv.className='mt-8 p-6 bg-white rounded-2xl border border-gray-200 shadow-sm text-center';
-        statDiv.innerHTML=`<h3 class="text-gray-500 font-medium text-sm uppercase tracking-wider mb-2">Best Temperature</h3><div class="text-3xl font-bold text-gray-900">${best[0]}</div><div class="text-sm text-gray-500 mt-1">Pass Rate: ${((best[1].p/best[1].t)*100).toFixed(1)}%</div>`;
+        statDiv.innerHTML=`<h3 class="text-gray-500 font-medium text-sm uppercase tracking-wider mb-2">Optimal Temperature</h3><div class="text-3xl font-bold text-gray-900">${optimal}</div><div class="text-xs text-gray-400 mt-2">Weighted Center of Correctness</div>`;
         container.appendChild(statDiv);
       }
     })();
