@@ -1,1 +1,78 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lynchmark – Gemini Benchmark</title>
+  <meta name="description" content="Lynchmark Gemini Benchmark tests.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>body{font-family:Inter,sans-serif}.mono{font-family:"IBM Plex Mono",monospace}</style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <main class="max-w-2xl mx-auto flex flex-col min-h-screen p-6 lg:p-8">
+    <header class="text-center mb-10">
+      <h1 class="text-4xl font-bold text-gray-900 mb-2">Lynchmark <span class="text-blue-600">Gemini</span></h1>
+      <p class="text-base text-gray-600 max-w-lg mx-auto">
+        Benchmark run specifically for Gemini models via Google API.
+      </p>
+      <div class="mt-4"><a href="/" class="text-sm text-blue-500 hover:underline">← Back to Main Benchmark</a></div>
+    </header>
+    <div id="results-container" class="flex flex-col gap-6 flex-grow"></div>
+    <footer class="mt-10 flex justify-center text-xs text-gray-500 mono">@multipleof4/lynchmark</footer>
+  </main>
+  <script type="module">
+    const get=id=>document.getElementById(id);
+    const container=get('results-container');
+    const grades=[[.97,'A+'],[.93,'A'],[.9,'A-'],[.87,'B+'],[.83,'B'],[.8,'B-'],[.77,'C+'],[.73,'C'],[.7,'C-'],[.6,'D'],[0,'F']];
+    const gradeOf=r=>grades.find(([f])=>r>=f)[1];
+    (async()=>{
+      const readme=await fetch('./README').then(r=>r.text());
+      const genTimes=await fetch('./results.json').then(r=>r.json());
+      // Extract Gemini models using the specific block
+      const models=readme.match(/<!-- GEMINI_START -->\n([\s\S]+?)\n<!-- MODELS_END -->/)[1].trim().split('\n').filter(Boolean);
+      const tests=[...new Set(Object.values(genTimes).flatMap(Object.keys))].sort();
+      
+      for(const model of models){
+        const sModel=model.replace(/[\/:]/g,'_');
+        const card=document.createElement('section');
+        card.className='rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden';
+        card.innerHTML=`<div class="bg-gray-50 px-5 py-3 border-b border-gray-200"><p class="mono text-sm text-gray-700 font-medium">${model}</p></div><ul class="p-4 space-y-2" id="list-${sModel}"></ul>`;
+        container.appendChild(card);
+        const list=get(`list-${sModel}`);
+        let passed=0;
+        
+        for(const test of tests){
+          const li=document.createElement('li');
+          li.className='flex items-center gap-3 text-sm';
+          list.appendChild(li);
+          const time=genTimes[model]?.[test];
+          if(time===null||time===undefined){
+             li.innerHTML=`— <span class="font-medium text-gray-800">${test}</span><span class="mono text-gray-500 ml-auto">N/A</span>`;
+             continue;
+          }
+          li.innerHTML=`<span class="animate-pulse">...</span> <span class="font-medium text-gray-800">${test}</span>`;
+          let status='✅';
+          try{
+            await Promise.race([
+              (async()=>{
+                const tMod=await import(`./tests/${test}/test.js`);
+                const lMod=await import(`./tests/${test}/outputs/${sModel}.js`);
+                await tMod.default.runTest(lMod.default);
+              })(),
+              new Promise((_,r)=>setTimeout(()=>r(new Error('Timeout')),12000))
+            ]);
+          }catch(e){console.error(`${model}:${test}`,e);status='❌';}
+          if(status==='✅')passed++;
+          li.innerHTML=`${status} <span class="font-medium text-gray-800">${test}</span><span class="mono text-gray-500 ml-auto">${time.toFixed(3)}s</span>`;
+        }
+        const ratio=tests.length?passed/tests.length:0;
+        const grade=gradeOf(ratio);
+        const scoreLi=document.createElement('li');
+        scoreLi.className='mt-3 pt-3 border-t border-gray-200 flex items-center text-sm justify-between';
+        scoreLi.innerHTML=`<span class="text-gray-600">Score</span><span class="flex items-center gap-3"><span class="mono text-gray-900 font-semibold">${passed}/${tests.length}</span><span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800">${grade}</span></span>`;
+        list.appendChild(scoreLi);
+      }
+    })();
+  </script>
+</body>
+</html>
