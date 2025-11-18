@@ -1,39 +1,38 @@
-async function processCSV(csv, {
-  filterColumn,
-  filterValue,
-  groupBy,
-  aggregateColumn,
-  operation,
-}) {
-  const { default: Papa } = await import(
-    'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js'
-  );
+async function processCSV(csvString, config) {
+  const {
+    filterColumn,
+    filterValue,
+    groupBy,
+    aggregateColumn,
+    operation
+  } = config;
 
-  const { data } = Papa.parse(csv, { header: true, skipEmptyLines: true });
+  const { default: Papa } = await import('https://cdn.jsdelivr.net/npm/papaparse@5.4.1/+esm');
 
-  const groups = data.reduce((acc, row) => {
-    if (row[filterColumn] != filterValue) {
+  const { data } = Papa.parse(csvString, {
+    header: true,
+    skipEmptyLines: true
+  });
+
+  const groups = data
+    .filter(row => row[filterColumn] == filterValue)
+    .reduce((acc, row) => {
+      const key = row[groupBy];
+      const val = Number(row[aggregateColumn]) || 0;
+
+      if (operation === 'avg') {
+        const group = (acc[key] ??= { sum: 0, count: 0 });
+        group.sum += val;
+        group.count++;
+      } else {
+        acc[key] = (acc[key] ?? 0) + (operation === 'sum' ? val : 1);
+      }
       return acc;
-    }
+    }, {});
 
-    const key = row[groupBy];
-    const stats = acc.get(key) || { sum: 0, count: 0 };
-
-    stats.sum += Number(row[aggregateColumn]) || 0;
-    stats.count++;
-
-    return acc.set(key, stats);
-  }, new Map());
-
-  const aggregators = {
-    sum: ({ sum }) => sum,
-    avg: ({ sum, count }) => (count ? sum / count : 0),
-    count: ({ count }) => count,
-  };
-
-  return Array.from(groups, ([key, stats]) => ({
-    [groupBy]: key,
-    result: aggregators[operation](stats),
+  return Object.entries(groups).map(([groupValue, aggData]) => ({
+    [groupBy]: groupValue,
+    result: operation === 'avg' ? aggData.sum / aggData.count : aggData,
   }));
 }
 export default processCSV;

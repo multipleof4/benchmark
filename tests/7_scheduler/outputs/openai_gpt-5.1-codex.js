@@ -1,52 +1,44 @@
-let luxon$
-
-const findAvailableSlots = async (calA, calB, cfg) => {
-  const {DateTime, Interval} = await (luxon$ ||= import('https://cdn.skypack.dev/luxon'))
-  const {durationMinutes: d, searchRange: r, workHours: w} = cfg
-  const s = DateTime.fromISO(r.start)
-  const e = DateTime.fromISO(r.end)
-  const range = Interval.fromDateTimes(s, e)
-  const [sh, sm] = w.start.split(':').map(Number)
-  const [eh, em] = w.end.split(':').map(Number)
-  const busy = [...calA, ...calB]
-    .map(({start, end}) => ({start: DateTime.fromISO(start), end: DateTime.fromISO(end)}))
-    .filter(v => v.end > s && v.start < e)
-    .map(v => ({start: v.start < s ? s : v.start, end: v.end > e ? e : v.end}))
-    .sort((a, b) => a.start.valueOf() - b.start.valueOf())
-  const merged = []
-  for (const slot of busy) {
-    const last = merged.at(-1)
-    if (!last || slot.start > last.end) merged.push({...slot})
-    else if (slot.end > last.end) last.end = slot.end
+async function findAvailableSlots(a,b,c){
+ const {DateTime}=await import('https://cdn.skypack.dev/luxon')
+ const {durationMinutes:d,searchRange:s,workHours:w}=c
+ const r=[DateTime.fromISO(s.start),DateTime.fromISO(s.end)]
+ const hm=q=>q.split(':').map(Number)
+ const [sh,sm]=hm(w.start)
+ const [eh,em]=hm(w.end)
+ const clamp=o=>{
+  let x=DateTime.fromISO(o.start)
+  let y=DateTime.fromISO(o.end)
+  if(+y<=+r[0]||+x>=+r[1])return
+  if(+x<+r[0])x=r[0]
+  if(+y>+r[1])y=r[1]
+  if(+y<=+x)return
+  return{ s:x,e:y}
+ }
+ const merged=[]
+ ;[...a,...b].map(clamp).filter(Boolean).sort((x,y)=>+x.s-+y.s).forEach(v=>{
+  const last=merged.at(-1)
+  if(!last||+v.s>+last.e)merged.push({s:v.s,e:v.e})
+  else if(+v.e>+last.e)last.e=v.e
+ })
+ const gaps=[]
+ let cur=r[0]
+ merged.forEach(v=>{
+  if(+v.s>+cur)gaps.push({s:cur,e:v.s})
+  if(+v.e>+cur)cur=v.e
+ })
+ if(+cur<+r[1])gaps.push({s:cur,e:r[1]})
+ const slots=[]
+ const step={minutes:d}
+ gaps.forEach(g=>{
+  for(let day=g.s.startOf('day');+day<+g.e;day=day.plus({days:1})){
+   const ws=day.set({hour:sh,minute:sm,second:0,millisecond:0})
+   const we=day.set({hour:eh,minute:em,second:0,millisecond:0})
+   let u=+ws>+g.s?ws:g.s
+   const limit=+we<+g.e?we:g.e
+   if(+limit<=+u)continue
+   for(;+u.plus(step)<=+limit;u=u.plus(step))slots.push({start:u.toISO(),end:u.plus(step).toISO()})
   }
-  const out = []
-  const emit = (from, to) => {
-    if (!(to > from)) return
-    for (let st = from, en = st.plus({minutes: d}); en <= to; st = en, en = st.plus({minutes: d}))
-      out.push({start: st.toISO(), end: en.toISO()})
-  }
-  let i = 0
-  for (let day = s.startOf('day'); day < e; day = day.plus({days: 1})) {
-    const ws = day.set({hour: sh, minute: sm, second: 0, millisecond: 0})
-    const we = day.set({hour: eh, minute: em, second: 0, millisecond: 0})
-    const block = Interval.fromDateTimes(ws, we).intersection(range)
-    if (!block) continue
-    while (i < merged.length && merged[i].end <= block.start) i++
-    let cursor = block.start
-    for (let j = i; j < merged.length && merged[j].start < block.end; j++) {
-      const bs = merged[j].start > block.start ? merged[j].start : block.start
-      if (bs > cursor) {
-        emit(cursor, bs)
-        cursor = bs
-      }
-      if (merged[j].end > cursor) {
-        const be = merged[j].end < block.end ? merged[j].end : block.end
-        cursor = be
-      }
-      if (cursor >= block.end) break
-    }
-    if (cursor < block.end) emit(cursor, block.end)
-  }
-  return out
+ })
+ return slots
 }
 export default findAvailableSlots;

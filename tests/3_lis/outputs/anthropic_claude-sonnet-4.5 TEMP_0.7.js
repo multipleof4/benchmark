@@ -1,7 +1,8 @@
-const findLISLength = async (arr) => {
+async function findLISLength(arr) {
+  const { bisectLeft } = await import('https://cdn.jsdelivr.net/npm/d3-array@3/+esm');
+  
   if (!arr?.length) return 0;
   
-  const { bisectLeft } = await import('https://cdn.skypack.dev/d3-array');
   const tails = [];
   
   for (const num of arr) {
@@ -10,5 +11,5 @@ const findLISLength = async (arr) => {
   }
   
   return tails.length;
-};
+}
 export default findLISLength;

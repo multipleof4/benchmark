@@ -9,7 +9,7 @@ async function findConvexHull(points) {
   
   const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
   
-  const buildHull = pts => {
+  const buildHull = (pts) => {
     const hull = [];
     for (const p of pts) {
       while (hull.length >= 2 && cross(hull[hull.length - 2], hull[hull.length - 1], p) <= 0) {

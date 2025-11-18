@@ -1,77 +1,71 @@
-async function findAvailableSlots(cal1, cal2, constraints) {
-  const { DateTime, Interval } = await import('https://cdn.skypack.dev/luxon');
-  const { durationMinutes, searchRange, workHours } = constraints;
-  const searchStart = DateTime.fromISO(searchRange.start);
-  const searchEnd = DateTime.fromISO(searchRange.end);
-  const searchInterval = Interval.fromDateTimes(searchStart, searchEnd);
-  const zone = searchStart.zone;
-  const workStart = DateTime.fromFormat(workHours.start, 'HH:mm', { zone });
-  const workEnd = DateTime.fromFormat(workHours.end, 'HH:mm', { zone });
-  let busies = [];
-  for (const slot of [...cal1, ...cal2]) {
-    const iv = Interval.fromISO(`${slot.start}/${slot.end}`);
-    const i = iv.intersection(searchInterval);
-    if (i?.isValid) busies.push(i);
-  }
-  let nonWork = [];
-  let currentDay = searchStart.startOf('day');
-  const endDay = searchEnd.endOf('day');
-  while (currentDay <= endDay) {
-    const dayStart = currentDay;
-    const dayEnd = currentDay.plus({ days: 1 });
-    const wStart = dayStart.set({ hour: workStart.hour, minute: workStart.minute, second: 0, millisecond: 0 });
-    const wEnd = dayStart.set({ hour: workEnd.hour, minute: workEnd.minute, second: 0, millisecond: 0 });
-    const blocks = [];
-    if (dayStart < wStart) blocks.push(Interval.fromDateTimes(dayStart, wStart));
-    if (wEnd < dayEnd) blocks.push(Interval.fromDateTimes(wEnd, dayEnd));
-    for (const b of blocks) {
-      const i = b.intersection(searchInterval);
-      if (i?.isValid) nonWork.push(i);
+async function findAvailableSlots(cal1, cal2, cons) {
+  const { DateTime: DT, Interval: IV, Duration: D } = await import('https://esm.sh/luxon@3.4.4');
+  const dur = D.fromObject({ minutes: cons.durationMinutes });
+  const sr = IV.fromISO(`${cons.searchRange.start}/${cons.searchRange.end}`);
+  const [h1, m1] = cons.workHours.start.split(':').map(Number);
+  const [h2, m2] = cons.workHours.end.split(':').map(Number);
+  let busies = [...cal1, ...cal2].map(e => IV.fromISO(`${e.start}/${e.end}`))
+    .filter(iv => iv?.overlaps(sr))
+    .map(iv => iv.intersection(sr))
+    .filter(iv => iv && !iv.isEmpty)
+    .sort((a, b) => a.start.toMillis() - b.start.toMillis());
+  let merged = [];
+  for (let iv of busies) {
+    if (!merged.length) {
+      merged.push(iv);
+      continue;
     }
-    currentDay = currentDay.plus({ days: 1 });
-  }
-  let allBlocked = [...busies, ...nonWork].sort((a, b) => a.start.valueOf() - b.start.valueOf());
-  const mergedBlocked = [];
-  for (const iv of allBlocked) {
-    const last = mergedBlocked.at(-1);
-    if (!last || !last.overlaps(iv)) {
-      mergedBlocked.push(iv);
+    let last = merged[merged.length - 1];
+    if (last.end >= iv.start) {
+      const newEnd = last.end.toMillis() > iv.end.toMillis() ? last.end : iv.end;
+      merged[merged.length - 1] = IV.fromDateTimes(last.start, newEnd);
     } else {
-      mergedBlocked[mergedBlocked.length - 1] = last.union(iv);
+      merged.push(iv);
     }
   }
-  const freePeriods = [];
-  if (mergedBlocked.length === 0) {
-    freePeriods.push(searchInterval);
-  } else {
-    if (searchStart < mergedBlocked[0].start) {
-      freePeriods.push(Interval.fromDateTimes(searchStart, mergedBlocked[0].start));
+  let frees = [];
+  let prevEnd = sr.start;
+  for (let busy of merged) {
+    if (prevEnd < busy.start) {
+      frees.push(IV.fromDateTimes(prevEnd, busy.start));
     }
-    for (let i = 0; i < mergedBlocked.length - 1; i++) {
-      const gapStart = mergedBlocked[i].end;
-      const gapEnd = mergedBlocked[i + 1].start;
-      if (gapStart < gapEnd) {
-        freePeriods.push(Interval.fromDateTimes(gapStart, gapEnd));
+    prevEnd = busy.end;
+  }
+  if (prevEnd < sr.end) {
+    frees.push(IV.fromDateTimes(prevEnd, sr.end));
+  }
+  let workFrees = [];
+  for (let free of frees) {
+    let cur = free.start;
+    while (cur < free.end) {
+      let dayS = cur.startOf('day');
+      let dayE = dayS.plus({ days: 1 });
+      let dInt = IV.fromDateTimes(dayS, dayE);
+      let dayFree = free.intersection(dInt);
+      if (dayFree && !dayFree.isEmpty) {
+        let wS = dayS.plus({ hours: h1, minutes: m1 });
+        let wE = dayS.plus({ hours: h2, minutes: m2 });
+        let wInt = IV.fromDateTimes(wS, wE);
+        let wf = dayFree.intersection(wInt);
+        if (wf && !wf.isEmpty) {
+          workFrees.push(wf);
+        }
       }
-    }
-    if (mergedBlocked.at(-1).end < searchEnd) {
-      freePeriods.push(Interval.fromDateTimes(mergedBlocked.at(-1).end, searchEnd));
+      cur = dayE;
     }
   }
-  const availableSlots = [];
-  for (const freeIv of freePeriods) {
-    if (freeIv.length('milliseconds') < durationMinutes * 60 * 1000) continue;
-    let current = freeIv.start;
-    while (true) {
-      const slotEnd = current.plus({ minutes: durationMinutes });
-      if (slotEnd > freeIv.end) break;
-      availableSlots.push({
-        start: current.toISO(),
-        end: slotEnd.toISO()
-      });
-      current = slotEnd;
+  let slots = [];
+  const dMs = dur.toMillis();
+  for (let wf of workFrees) {
+    let remMs = wf.end.toMillis() - wf.start.toMillis();
+    let n = Math.floor(remMs / dMs);
+    let fs = wf.start;
+    for (let i = 0; i < n; i++) {
+      let ss = fs.plus(D.fromMillis(i * dMs));
+      let se = ss.plus(dur);
+      slots.push({ start: ss.toISO(), end: se.toISO() });
     }
   }
-  return availableSlots;
+  return slots;
 }
 export default findAvailableSlots;

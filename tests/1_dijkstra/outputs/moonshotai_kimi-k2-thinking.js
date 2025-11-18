@@ -1,35 +1,24 @@
 async function findShortestPath(graph, start, end) {
-  let PriorityQueue;
-  try {
-    const mod = await import('https://esm.sh/js-priority-queue@1.0.0');
-    PriorityQueue = mod.default || mod;
-  } catch {
-    throw new Error('Failed to load priority queue library');
-  }
-  
-  if (!(start in graph) || !(end in graph)) return Infinity;
-  if (start === end) return 0;
-  
-  const dist = { [start]: 0 };
-  const pq = new PriorityQueue({ 
-    comparator: (a, b) => a[1] - b[1],
-    initialValues: [[start, 0]]
-  });
+  const { default: Q } = await import('https://cdn.jsdelivr.net/npm/js-priority-queue@0.1.5/index.min.js');
+  const dist = { [start]: 0 }, visited = new Set();
+  const pq = new Q({ comparator: (a, b) => dist[a] - dist[b] });
+  pq.queue(start);
   
   while (pq.length) {
-    const [node, d] = pq.dequeue();
-    if (node === end) return d;
-    if (d > (dist[node] ?? Infinity)) continue;
-    
-    for (const [neighbor, weight] of Object.entries(graph[node])) {
-      const newDist = d + weight;
-      if (newDist < (dist[neighbor] ?? Infinity)) {
-        dist[neighbor] = newDist;
-        pq.queue([neighbor, newDist]);
+    const node = pq.dequeue();
+    if (node === end) return dist[end];
+    if (visited.has(node)) continue;
+    visited.add(node);
+    const nodeDist = dist[node];
+    for (const [adj, weight] of Object.entries(graph[node] || {})) {
+      if (visited.has(adj)) continue;
+      const newDist = nodeDist + weight;
+      if (newDist < (dist[adj] ?? Infinity)) {
+        dist[adj] = newDist;
+        pq.queue(adj);
       }
     }
   }
-  
   return Infinity;
 }
 export default findShortestPath;

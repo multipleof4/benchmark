@@ -1,81 +1,71 @@
-async function findAvailableSlots(cal1, cal2, constraints) {
-  const { parse, format, addMinutes, isWithinInterval, isBefore, isAfter, startOfDay, setHours, setMinutes } = await import('https://cdn.jsdelivr.net/npm/date-fns@3.0.0/+esm');
+const findAvailableSlots = async (cal1, cal2, constraints) => {
+  const { default: dayjs } = await import('https://cdn.jsdelivr.net/npm/dayjs@1.11.10/+esm');
+  const { default: isBetween } = await import('https://cdn.jsdelivr.net/npm/dayjs@1.11.10/plugin/isBetween.js/+esm');
+  const { default: customParseFormat } = await import('https://cdn.jsdelivr.net/npm/dayjs@1.11.10/plugin/customParseFormat.js/+esm');
   
+  dayjs.extend(isBetween);
+  dayjs.extend(customParseFormat);
+
   const { durationMinutes, searchRange, workHours } = constraints;
-  const duration = durationMinutes;
-  
-  const parseTime = (dateStr) => parse(dateStr, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx", new Date());
-  const toISO = (date) => format(date, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx");
-  
-  const rangeStart = parseTime(searchRange.start);
-  const rangeEnd = parseTime(searchRange.end);
-  
-  const [whStart, whEnd] = workHours.start.split(':').map(Number);
-  const [whEndH, whEndM] = workHours.end.split(':').map(Number);
-  
-  const allBusy = [...cal1, ...cal2].map(slot => ({
-    start: parseTime(slot.start),
-    end: parseTime(slot.end)
-  })).sort((a, b) => a.start - b.start);
-  
+  const searchStart = dayjs(searchRange.start);
+  const searchEnd = dayjs(searchRange.end);
+
+  const allBusy = [...cal1, ...cal2]
+    .map(({ start, end }) => ({ start: dayjs(start), end: dayjs(end) }))
+    .sort((a, b) => a.start.valueOf() - b.start.valueOf());
+
   const merged = [];
   for (const slot of allBusy) {
-    if (!merged.length || isBefore(merged[merged.length - 1].end, slot.start)) {
-      merged.push({ ...slot });
+    if (!merged.length || merged[merged.length - 1].end.isBefore(slot.start)) {
+      merged.push({ start: slot.start, end: slot.end });
     } else {
-      merged[merged.length - 1].end = isAfter(slot.end, merged[merged.length - 1].end) 
-        ? slot.end 
-        : merged[merged.length - 1].end;
+      merged[merged.length - 1].end = dayjs.max(merged[merged.length - 1].end, slot.end);
     }
   }
-  
+
   const freePeriods = [];
-  let current = rangeStart;
+  let current = searchStart;
   
   for (const busy of merged) {
-    if (isBefore(current, busy.start)) {
+    if (current.isBefore(busy.start)) {
       freePeriods.push({ start: current, end: busy.start });
     }
-    current = isAfter(busy.end, current) ? busy.end : current;
+    current = dayjs.max(current, busy.end);
   }
   
-  if (isBefore(current, rangeEnd)) {
-    freePeriods.push({ start: current, end: rangeEnd });
+  if (current.isBefore(searchEnd)) {
+    freePeriods.push({ start: current, end: searchEnd });
   }
-  
-  const isInWorkHours = (date) => {
-    const day = startOfDay(date);
-    const workStart = setMinutes(setHours(day, whStart), whEnd > 0 ? 0 : 0);
-    const workEnd = setMinutes(setHours(day, whEndH), whEndM);
-    return isWithinInterval(date, { start: workStart, end: workEnd });
+
+  const isWithinWorkHours = (slotStart, slotEnd) => {
+    const date = slotStart.format('YYYY-MM-DD');
+    const workStart = dayjs(`${date} ${workHours.start}`, 'YYYY-MM-DD HH:mm');
+    const workEnd = dayjs(`${date} ${workHours.end}`, 'YYYY-MM-DD HH:mm');
+    
+    return !slotStart.isBefore(workStart) && !slotEnd.isAfter(workEnd);
   };
-  
+
   const slots = [];
   
   for (const period of freePeriods) {
     let slotStart = period.start;
     
-    while (true) {
-      const slotEnd = addMinutes(slotStart, duration);
+    while (slotStart.add(durationMinutes, 'minute').isSameOrBefore(period.end)) {
+      const slotEnd = slotStart.add(durationMinutes, 'minute');
       
-      if (isAfter(slotEnd, period.end)) break;
-      
-      if (isInWorkHours(slotStart) && isInWorkHours(slotEnd)) {
-        const day1 = startOfDay(slotStart);
-        const day2 = startOfDay(slotEnd);
-        
-        if (day1.getTime() === day2.getTime()) {
-          slots.push({
-            start: toISO(slotStart),
-            end: toISO(slotEnd)
-          });
-        }
+      if (isWithinWorkHours(slotStart, slotEnd) &&
+          !slotStart.isBefore(searchStart) &&
+          !slotEnd.isAfter(searchEnd)) {
+        slots.push({
+          start: slotStart.toISOString(),
+          end: slotEnd.toISOString()
+        });
       }
       
       slotStart = slotEnd;
     }
   }
-  
+
   return slots;
-}
+};
 export default findAvailableSlots;

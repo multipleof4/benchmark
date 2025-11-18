@@ -1,9 +1,9 @@
-const processCSV = async (csv, { filterColumn, filterValue, groupBy, aggregateColumn, operation }) => {
-  const { parse } = await import('https://cdn.skypack.dev/csv-parse/sync');
+const processCSV = async (csvString, { filterColumn, filterValue, groupBy, aggregateColumn, operation }) => {
+  const { default: Papa } = await import('https://cdn.jsdelivr.net/npm/[email protected]/+esm');
   
-  const records = parse(csv, { columns: true, skip_empty_lines: true });
+  const { data } = Papa.parse(csvString, { header: true, skipEmptyLines: true });
   
-  const filtered = records.filter(r => r[filterColumn] == filterValue);
+  const filtered = data.filter(row => row[filterColumn] == filterValue);
   
   const groups = filtered.reduce((acc, row) => {
     const key = row[groupBy];
@@ -12,12 +12,12 @@ const processCSV = async (csv, { filterColumn, filterValue, groupBy, aggregateCo
   }, {});
   
   return Object.entries(groups).map(([key, rows]) => {
-    const vals = rows.map(r => Number(r[aggregateColumn]) || 0);
-    const sum = vals.reduce((a, b) => a + b, 0);
+    const values = rows.map(r => +r[aggregateColumn] || 0);
+    const sum = values.reduce((a, b) => a + b, 0);
     
     return {
       [groupBy]: key,
-      result: operation === 'sum' ? sum : operation === 'avg' ? sum / vals.length : vals.length
+      result: operation === 'sum' ? sum : operation === 'avg' ? sum / values.length : rows.length
     };
   });
 };

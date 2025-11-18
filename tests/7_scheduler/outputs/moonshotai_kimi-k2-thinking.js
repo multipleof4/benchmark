@@ -1,35 +1,57 @@
-export async function findAvailableSlots(a, b, { durationMinutes: d, searchRange: r, workHours: h }) {
-  const { parseISO, addMinutes, isWithinInterval, compareAsc, startOfDay, setHours, setMinutes } = await import('https://esm.sh/date-fns');
+async function findAvailableSlots(cal1, cal2, constraints) {
+  const { parseISO, addMinutes, set, max, min, startOfDay } = await import('https://cdn.skypack.dev/date-fns');
   
-  const toDate = (s) => parseISO(s);
-  const all = [...a, ...b].map(({ start: s, end: e }) => ({ s: toDate(s), e: toDate(e) }));
-  all.sort((a, b) => compareAsc(a.s, b.s));
+  const { durationMinutes, searchRange, workHours } = constraints;
+  const toDate = d => parseISO(d);
+  const [whStart, whEnd] = [workHours.start, workHours.end].map(t => t.split(':').map(Number));
+  const durMs = durationMinutes * 60000;
+  const rng = { s: toDate(searchRange.start), e: toDate(searchRange.end) };
   
-  const busy = [];
-  for (const i of all) {
-    if (!busy.length || compareAsc(i.s, busy.at(-1).e) > 0) busy.push({ s: i.s, e: i.e });
-    else if (compareAsc(i.e, busy.at(-1).e) > 0) busy.at(-1).e = i.e;
+  const merged = [...cal1, ...cal2]
+    .map(({ start, end }) => ({ s: toDate(start), e: toDate(end) }))
+    .sort((a, b) => a.s - b.s)
+    .reduce((acc, slot) => {
+      const last = acc.at(-1);
+      if (!last || slot.s > last.e) acc.push({ ...slot });
+      else last.e = max([last.e, slot.e]);
+      return acc;
+    }, []);
+  
+  const gaps = [];
+  let cur = rng.s;
+  for (let i = 0; i <= merged.length; i++) {
+    const slot = merged[i];
+    const end = slot ? slot.s : rng.e;
+    if (end > cur && cur < rng.e) gaps.push({ s: cur, e: end });
+    cur = slot && cur < slot.e ? slot.e : cur;
+    if (cur >= rng.e) break;
   }
   
-  const range = { s: toDate(r.start), e: toDate(r.end) };
-  const [[sh, sm], [eh, em]] = [h.start, h.end].map(t => t.split(':').map(Number));
-  
   const slots = [];
-  let cur = range.s;
-  
-  while (compareAsc(cur, range.e) < 0) {
-    const end = addMinutes(cur, d);
-    if (compareAsc(end, range.e) > 0) break;
+  for (const { s, e } of gaps) {
+    let day = startOfDay(s);
+    const lastDay = startOfDay(e);
     
-    const day = startOfDay(cur);
-    const work = { s: setHours(setMinutes(day, sm), sh), e: setHours(setMinutes(day, em), eh) };
-    
-    const inWork = isWithinInterval(cur, work) && isWithinInterval(end, work);
-    const isFree = !busy.some(b => compareAsc(cur, b.e) < 0 && compareAsc(end, b.s) > 0);
-    
-    if (inWork && isFree) slots.push({ start: cur.toISOString(), end: end.toISOString() });
-    
-    cur = end;
+    while (day <= lastDay) {
+      const ws = set(day, { hours: whStart[0], minutes: whStart[1], seconds: 0, milliseconds: 0 });
+      const we = set(day, { hours: whEnd[0], minutes: whEnd[1], seconds: 0, milliseconds: 0 });
+      
+      if (ws < we) {
+        const effS = max([ws, s]);
+        const effE = min([we, e]);
+        
+        if (effS < effE) {
+          let slotS = effS;
+          while (slotS.getTime() + durMs <= effE.getTime()) {
+            const slotE = addMinutes(slotS, durationMinutes);
+            slots.push({ start: slotS.toISOString(), end: slotE.toISOString() });
+            slotS = slotE;
+          }
+        }
+      }
+      
+      day = addMinutes(day, 1440);
+    }
   }
   
   return slots;

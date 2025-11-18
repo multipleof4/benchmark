@@ -1,5 +1,5 @@
-async function parseMarkdown(text) {
-  const {marked} = await import('https://unpkg.com/marked@14.1.2?module');
-  return marked(text);
+async function parseMarkdown(md){
+  const{marked}=await import('https://esm.sh/marked');
+  return marked.parse(md);
 }
 export default parseMarkdown;

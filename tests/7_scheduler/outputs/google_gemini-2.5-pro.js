@@ -1,72 +1,58 @@
-const findAvailableSlots = async (calendar1, calendar2, constraints) => {
-  const [{ default: dayjs }, { default: utc }] = await Promise.all([
-    import('https://cdn.skypack.dev/dayjs'),
-    import('https://cdn.skypack.dev/dayjs/plugin/utc.js'),
-  ]);
-  dayjs.extend(utc);
+async function findAvailableSlots(calendar1, calendar2, constraints) {
+  const {
+    parseISO, addMinutes, formatISO, max, setHours, setMinutes,
+    setSeconds, setMilliseconds, startOfDay, endOfDay, eachDayOfInterval,
+  } = await import('https://cdn.jsdelivr.net/npm/date-fns@2/esm/index.js');
 
-  const { durationMinutes, searchRange, workHours } = constraints;
-  
-  const toDayjs = (t) => dayjs.utc(t);
-  const toDayjsRange = ({ start, end }) => ({ start: toDayjs(start), end: toDayjs(end) });
+  const { durationMinutes: duration, searchRange, workHours } = constraints;
+  const searchStart = parseISO(searchRange.start);
+  const searchEnd = parseISO(searchRange.end);
+  const [workStartH, workStartM] = workHours.start.split(':').map(Number);
+  const [workEndH, workEndM] = workHours.end.split(':').map(Number);
 
-  const search = toDayjsRange(searchRange);
-  const allBusy = [...calendar1, ...calendar2]
-    .map(toDayjsRange)
-    .sort((a, b) => a.start.valueOf() - b.start.valueOf());
+  const setTime = (date, h, m) =>
+    setMilliseconds(setSeconds(setMinutes(setHours(date, h), m), 0), 0);
 
-  const mergedBusy = allBusy.reduce((acc, current) => {
-    const last = acc[acc.length - 1];
-    if (last && current.start.valueOf() < last.end.valueOf()) {
-      if (current.end.isAfter(last.end)) {
-        last.end = current.end;
-      }
+  const busySlots = [...calendar1, ...calendar2].map(({ start, end }) => ({
+    start: parseISO(start),
+    end: parseISO(end),
+  }));
+
+  const nonWorkSlots = eachDayOfInterval({ start: searchStart, end: searchEnd })
+    .flatMap(day => [
+      { start: startOfDay(day), end: setTime(day, workStartH, workStartM) },
+      { start: setTime(day, workEndH, workEndM), end: endOfDay(day) }
+    ]);
+
+  const allUnavailable = [...busySlots, ...nonWorkSlots]
+    .sort((a, b) => a.start - b.start);
+
+  const merged = allUnavailable.reduce((acc, current) => {
+    const last = acc.at(-1);
+    if (last && current.start <= last.end) {
+      last.end = max(last.end, current.end);
     } else {
       acc.push({ ...current });
     }
     return acc;
   }, []);
 
-  const boundaryPoints = [
-    search.start,
-    ...mergedBusy.flatMap(b => [b.start, b.end]),
-    search.end,
-  ];
-
-  const freeGaps = [];
-  for (let i = 0; i < boundaryPoints.length - 1; i += 2) {
-    const start = boundaryPoints[i];
-    const end = boundaryPoints[i + 1];
-    if (end.isAfter(start)) {
-      freeGaps.push({ start, end });
-    }
-  }
-
   const availableSlots = [];
-  const [workStartH, workStartM] = workHours.start.split(':').map(Number);
-  const [workEndH, workEndM] = workHours.end.split(':').map(Number);
+  let cursor = searchStart;
 
-  for (const gap of freeGaps) {
-    let cursor = gap.start.startOf('day');
-    while (cursor.isBefore(gap.end)) {
-      const workWindowStart = cursor.hour(workStartH).minute(workStartM);
-      const workWindowEnd = cursor.hour(workEndH).minute(workEndM);
-
-      let effectiveStart = dayjs.max(gap.start, workWindowStart);
-      const effectiveEnd = dayjs.min(gap.end, workWindowEnd);
-
-      while (effectiveStart.add(durationMinutes, 'minute').valueOf() <= effectiveEnd.valueOf()) {
-        const slotEnd = effectiveStart.add(durationMinutes, 'minute');
-        availableSlots.push({ start: effectiveStart, end: slotEnd });
-        effectiveStart = slotEnd;
-      }
-      cursor = cursor.add(1, 'day');
+  [...merged, { start: searchEnd, end: searchEnd }].forEach(block => {
+    let slotStart = cursor;
+    while (addMinutes(slotStart, duration) <= block.start) {
+      const slotEnd = addMinutes(slotStart, duration);
+      availableSlots.push({ start: slotStart, end: slotEnd });
+      slotStart = slotEnd;
     }
-  }
+    cursor = max(cursor, block.end);
+  });
 
   return availableSlots.map(({ start, end }) => ({
-    start: start.toISOString(),
-    end: end.toISOString(),
+    start: formatISO(start),
+    end: formatISO(end),
   }));
-};
+}
 export default findAvailableSlots;

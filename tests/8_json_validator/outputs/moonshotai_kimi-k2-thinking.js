@@ -1,17 +1,25 @@
-const cache = new WeakMap();
-let ajv;
-
-async function validateJSON(json, schema) {
+const validateJSON = async (data, schema) => {
   try {
-    if (!ajv) {
-      const { default: Ajv } = await import('https://cdn.jsdelivr.net/npm/ajv@8/dist/ajv.mjs');
-      ajv = new Ajv({ allErrors: true, strict: false });
-    }
-    const validator = cache.get(schema) || (cache.set(schema, ajv.compile(schema)), cache.get(schema));
-    const valid = validator(json);
-    return { valid, errors: valid ? [] : validator.errors.map(e => `${e.instancePath} ${e.message}`.trim()) };
-  } catch (error) {
-    return { valid: false, errors: [error.message] };
+    const { default: Ajv } = await import('https://esm.sh/ajv@8.12.0');
+    const ajv = new Ajv({ allErrors: true, strict: false });
+    try {
+      const { default: addFormats } = await import('https://esm.sh/ajv-formats@2.1.1');
+      addFormats(ajv);
+    } catch {}
+    
+    const validate = ajv.compile(schema);
+    const valid = validate(data);
+    
+    return {
+      valid,
+      errors: valid ? [] : validate.errors.map(e => {
+        const path = (e.instancePath || 'root') + (e.keyword === 'required' ? `.${e.params.missingProperty}` : '');
+        const pattern = e.params?.pattern ? ` (${e.params.pattern})` : '';
+        return `${path} ${e.message}${pattern}`.trim();
+      })
+    };
+  } catch (e) {
+    return { valid: false, errors: [`Validator error: ${e.message}`] };
   }
-}
+};
 export default validateJSON;

@@ -11,42 +11,32 @@ async function createStreamVisualizer(asyncIterable, {
   } = await import('d3');
 
   const data = [];
-  let prevEma = null;
+  let prevEma;
 
-  for await (const {
-      timestamp,
-      value
-    } of asyncIterable) {
-    const ema = prevEma === null ?
+  for await (const { value, timestamp } of asyncIterable) {
+    prevEma = (prevEma === undefined) ?
       value :
       alpha * value + (1 - alpha) * prevEma;
 
     data.push({
       timestamp,
       value,
-      ema
+      ema: prevEma
     });
-    prevEma = ema;
-
     if (data.length > maxPoints) {
       data.shift();
     }
   }
 
-  if (data.length < 2) {
+  if (!data.length) {
     return {
       data,
       path: ''
     };
   }
 
-  const x = scaleLinear()
-    .domain([data[0].timestamp, data.at(-1).timestamp])
-    .range([0, width]);
-
-  const y = scaleLinear()
-    .domain(yDomain)
-    .range([height, 0]);
+  const x = scaleLinear([data[0].timestamp, data.at(-1).timestamp], [0, width]);
+  const y = scaleLinear(yDomain, [height, 0]);
 
   const path = line()
     .x(d => x(d.timestamp))
@@ -54,7 +44,7 @@ async function createStreamVisualizer(asyncIterable, {
 
   return {
     data,
-    path
+    path: path ?? ''
   };
 }
 export default createStreamVisualizer;

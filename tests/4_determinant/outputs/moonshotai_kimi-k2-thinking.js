@@ -1,8 +1,13 @@
-let math;
+const URL = 'https://cdn.jsdelivr.net/npm/mathjs@11.11.0/+esm';
+let det;
+
 async function calculateDeterminant(m) {
-  const n = m?.length;
-  if (!n || m.some(r => !Array.isArray(r) || r.length !== n)) throw new Error('Invalid matrix');
-  math ||= await import('https://cdn.jsdelivr.net/npm/mathjs@11.11.0/+esm');
-  return math.det(m);
+  const v = Array.isArray(m) && m.length && m.every(r => Array.isArray(r) && r.length === m.length);
+  if (!v) throw new TypeError('Invalid matrix');
+  
+  det ||= await import(URL).then(m => m.det).catch(() => { throw new Error('Load failed'); });
+  
+  try { return det(m); }
+  catch { throw new Error('Calc failed'); }
 }
 export default calculateDeterminant;

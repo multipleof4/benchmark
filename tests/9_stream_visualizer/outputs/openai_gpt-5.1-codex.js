@@ -1,23 +1,18 @@
-async function createStreamVisualizer(iterable, {
-  maxPoints = 100,
-  alpha = .5,
-  width = 300,
-  height = 150,
-  yDomain = [0, 1]
-} = {}) {
-  const { scaleLinear, line } = await import('https://cdn.jsdelivr.net/npm/d3@7/+esm')
-  const data = []
+const createStreamVisualizer=async(iter,o)=>{
+  const{maxPoints:m,alpha:a,width:w,height:h,yDomain:Y}=o
+  const data=[]
   let ema
-  for await (const point of iterable) {
-    const { timestamp, value } = point
-    ema = ema == null ? value : alpha * value + (1 - alpha) * ema
-    data.push({ timestamp, value, ema })
-    data.length > maxPoints && data.shift()
+  for await(const {timestamp:t,value:v} of iter){
+    const d=new Date(t)
+    ema=ema==null?v:a*v+(1-a)*ema
+    data.push({timestamp:d,value:v,ema})
+    if(data.length>m)data.shift()
   }
-  if (!data.length) return { data, path: '' }
-  const x = scaleLinear().domain([data[0].timestamp, data.at(-1).timestamp]).range([0, width])
-  const y = scaleLinear().domain(yDomain).range([height, 0])
-  const path = line().x(d => x(d.timestamp)).y(d => y(d.ema))(data) || ''
-  return { data, path }
+  if(!data.length)return{data,path:''}
+  const{scaleTime,scaleLinear,line}=await import('https://cdn.skypack.dev/d3@7?min')
+  const x=scaleTime().domain([data[0].timestamp,data[data.length-1].timestamp]).range([0,w])
+  const y=scaleLinear().domain(Y).range([h,0])
+  const path=line().x(d=>x(d.timestamp)).y(d=>y(d.ema))(data)||''
+  return{data,path}
 }
 export default createStreamVisualizer;

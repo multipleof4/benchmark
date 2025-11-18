@@ -6,12 +6,9 @@ const validateJSON = async (data, schema) => {
   
   return {
     valid,
-    errors: valid ? [] : validate.errors.map(e => ({
-      path: e.instancePath || '/',
-      message: e.message,
-      keyword: e.keyword,
-      params: e.params
-    }))
+    errors: valid ? [] : validate.errors.map(e => 
+      `${e.instancePath || '/'} ${e.message}`.trim()
+    )
   };
 };
 export default validateJSON;

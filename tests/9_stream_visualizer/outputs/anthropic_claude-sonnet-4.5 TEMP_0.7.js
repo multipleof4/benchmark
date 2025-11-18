@@ -6,9 +6,14 @@ export async function createStreamVisualizer(asyncIterable, options) {
   let prevEma;
   
   for await (const { timestamp, value } of asyncIterable) {
-    const ema = prevEma === undefined ? value : alpha * value + (1 - alpha) * prevEma;
+    const ema = prevEma === undefined 
+      ? value 
+      : alpha * value + (1 - alpha) * prevEma;
+    
     data.push({ timestamp, value, ema });
+    
     if (data.length > maxPoints) data.shift();
+    
     prevEma = ema;
   }
   

@@ -1,20 +1,24 @@
-const findShortestPath=async(g,s,t)=>{
-  if(s===t)return 0
-  const{default:PriorityQueue}=await import('https://cdn.skypack.dev/js-priority-queue')
-  if(!g[s]||!g[t])return Infinity
-  const seen=new Map([[s,0]])
-  const pq=new PriorityQueue({comparator:(a,b)=>a[1]-b[1]})
-  pq.queue([s,0])
+const src='https://esm.sh/js-priority-queue@1'
+let load
+const getPQ=()=>load||(load=import(src).then(m=>m.default))
+const findShortestPath=async(g,s,e)=>{
+  const PQ=await getPQ()
+  const pq=new PQ({comparator:(a,b)=>a[0]-b[0]})
+  const dist=new Map([[s,0]])
+  const done=new Set
+  pq.queue([0,s])
   while(pq.length){
-    const[n,d]=pq.dequeue()
-    if(d>(seen.get(n)??Infinity))continue
-    if(n===t)return d
-    const nbrs=g[n]||{}
-    for(const k in nbrs){
-      const nd=d+nbrs[k]
-      if(nd<(seen.get(k)??Infinity)){
-        seen.set(k,nd)
-        pq.queue([k,nd])
+    const [d,n]=pq.dequeue()
+    if(done.has(n))continue
+    done.add(n)
+    if(n===e)return d
+    const edges=g[n]
+    if(!edges)continue
+    for(const k in edges){
+      const w=d+edges[k]
+      if(w<(dist.get(k)??Infinity)){
+        dist.set(k,w)
+        pq.queue([w,k])
       }
     }
   }

@@ -1,19 +1,20 @@
 async function findShortestPath(graph,start,end){
-  const{PriorityQueue}=await import('https://cdn.skypack.dev/js-priority-queue');
+  const{default:PriorityQueue}=await import('https://cdn.skypack.dev/js-priority-queue');
   const dist={};
-  for(let n in graph)dist[n]=Infinity;
+  const pq=new PriorityQueue({comparator:(x,y)=>x.d-y.d});
+  for(const n of Object.keys(graph))dist[n]=Infinity;
   dist[start]=0;
-  const pq=new PriorityQueue({comparator:(a,b)=>a.d-b.d});
-  pq.queue({node:start,d:0});
+  pq.queue({n:start,d:0});
   while(!pq.isEmpty()){
-    const{node,d}=pq.dequeue();
-    if(d>dist[node])continue;
-    if(node===end)return d;
-    for(let nei in graph[node]){
-      const alt=d+graph[node][nei];
+    const{n:n,d:d}=pq.dequeue();
+    if(d>dist[n])continue;
+    if(n===end)return d;
+    for(let nei in graph[n]){
+      const w=graph[n][nei];
+      const alt=d+w;
       if(alt<dist[nei]){
         dist[nei]=alt;
-        pq.queue({node:nei,d:alt});
+        pq.queue({n:nei,d:alt});
       }
     }
   }
