@@ -1,23 +1,31 @@
 const findConvexHull = async (points) => {
+  if (!Array.isArray(points)) throw new Error('Input must be an array');
+  
   const { default: _ } = await import('https://esm.sh/lodash');
-  const P = _.sortBy(_.uniqWith(points, _.isEqual), ['x', 'y']);
-  if (P.length < 3) return P;
-
+  
+  const uniq = _.uniqWith(points, _.isEqual);
+  if (uniq.length < 3) return uniq;
+  
+  const sorted = _.sortBy(uniq, ['x', 'y']);
   const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
-  const h = [];
+  
+  const build = (list) => {
+    const hull = [];
+    for (const p of list) {
+      while (hull.length >= 2 && cross(hull[hull.length - 2], hull[hull.length - 1], p) <= 0) {
+        hull.pop();
+      }
+      hull.push(p);
+    }
+    return hull;
+  };
 
-  for (const p of P) {
-    while (h.length >= 2 && cross(h[h.length - 2], h[h.length - 1], p) <= 0) h.pop();
-    h.push(p);
-  }
-
-  const t = h.length + 1;
-  for (let i = P.length - 2; i >= 0; i--) {
-    while (h.length >= t && cross(h[h.length - 2], h[h.length - 1], P[i]) <= 0) h.pop();
-    h.push(P[i]);
-  }
-
-  h.pop();
-  return h;
+  const lower = build(sorted);
+  const upper = build([...sorted].reverse());
+  
+  lower.pop();
+  upper.pop();
+  
+  return [...lower, ...upper];
 };
 export default findConvexHull;

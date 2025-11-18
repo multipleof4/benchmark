@@ -1,28 +1,20 @@
-export const createStreamVisualizer = async (src, { maxPoints: m, alpha: a, width: w, height: h, yDomain: yD }) => {
-  const data = [];
-  let ema;
+const createStreamVisualizer = async (src, { maxPoints: m, alpha: a, width: w, height: h, yDomain: yd }) => {
+  const { scaleLinear, line } = await import('https://esm.sh/d3@7');
+  const D = [];
+  let e;
 
   for await (const { timestamp: t, value: v } of src) {
-    ema = ema == null ? v : a * v + (1 - a) * ema;
-    data.push({ timestamp: t, value: v, ema });
-    if (data.length > m) data.shift();
+    e = e === undefined ? v : a * v + (1 - a) * e;
+    D.push({ timestamp: t, value: v, ema: e });
+    if (D.length > m) D.shift();
   }
 
-  if (!data.length) return { data, path: '' };
+  if (!D.length) return { data: D, path: '' };
 
-  const { scaleLinear, line } = await import('d3');
-  
-  const x = scaleLinear()
-    .domain([data[0].timestamp, data[data.length - 1].timestamp])
-    .range([0, w]);
+  const x = scaleLinear().domain([D[0].timestamp, D[D.length - 1].timestamp]).range([0, w]);
+  const y = scaleLinear().domain(yd).range([h, 0]);
+  const l = line().x(d => x(d.timestamp)).y(d => y(d.ema));
 
-  const y = scaleLinear()
-    .domain(yD)
-    .range([h, 0]);
-
-  return {
-    data,
-    path: line().x(d => x(d.timestamp)).y(d => y(d.ema))(data)
-  };
+  return { data: D, path: l(D) };
 };
 export default createStreamVisualizer;

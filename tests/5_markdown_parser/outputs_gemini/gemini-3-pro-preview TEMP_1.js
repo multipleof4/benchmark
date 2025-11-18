@@ -1,4 +1,5 @@
-const parseMarkdown = async s =>
-  (await import('https://cdn.jsdelivr.net/npm/marked/+esm'))
-  .parse(s)
+const parseMarkdown = async (md = '') => {
+  const { parse } = await import('https://esm.sh/marked@12')
+  return parse(md)
+}
 export default parseMarkdown;

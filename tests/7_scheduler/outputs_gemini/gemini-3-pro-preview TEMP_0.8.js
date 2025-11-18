@@ -1,53 +1,45 @@
-export const findAvailableSlots = async (cal1, cal2, { durationMinutes: dur, searchRange: rng, workHours: wh }) => {
-  const [djs, utc] = await Promise.all([
-    import('https://esm.sh/dayjs@1.11.10'),
-    import('https://esm.sh/dayjs@1.11.10/plugin/utc')
-  ]);
-  const dayjs = djs.default;
-  dayjs.extend(utc.default);
-
-  const parse = d => dayjs(d).utc();
-  const [wsH, wsM] = wh.start.split(':').map(Number);
-  const [weH, weM] = wh.end.split(':').map(Number);
+const findAvailableSlots = async (cal1, cal2, { durationMinutes: dur, searchRange: range, workHours: work }) => {
+  const { parseISO } = await import('https://esm.sh/date-fns@2.30.0')
+  const toMs = d => parseISO(d).getTime()
   
-  let now = parse(rng.start);
-  const endLimit = parse(rng.end);
-  const slots = [];
-
   const busy = [...cal1, ...cal2]
-    .map(s => ({ s: parse(s.start), e: parse(s.end) }))
+    .map(c => ({ s: toMs(c.start), e: toMs(c.end) }))
     .sort((a, b) => a.s - b.s)
     .reduce((acc, c) => {
-      const last = acc.at(-1);
-      if (last && c.s <= last.e) last.e = c.e > last.e ? c.e : last.e;
-      else acc.push(c);
-      return acc;
-    }, []);
+      const last = acc[acc.length - 1]
+      if (last && c.s < last.e) last.e = Math.max(last.e, c.e)
+      else acc.push(c)
+      return acc
+    }, [])
 
-  while (now.add(dur, 'm') <= endLimit) {
-    const wStart = now.hour(wsH).minute(wsM).second(0).millisecond(0);
-    const wEnd = now.hour(weH).minute(weM).second(0).millisecond(0);
+  const start = toMs(range.start), end = toMs(range.end), ms = dur * 60000
+  const [sh, sm] = work.start.split(':'), [eh, em] = work.end.split(':')
+  const slots = []
 
-    if (now < wStart) now = wStart;
-    
-    const next = now.add(dur, 'm');
+  for (let d = new Date(start); d < end; d.setUTCDate(d.getUTCDate() + 1)) {
+    d.setUTCHours(0, 0, 0, 0)
+    const y = d.getUTCFullYear(), m = d.getUTCMonth(), day = d.getUTCDate()
+    const wStart = Math.max(Date.UTC(y, m, day, sh, sm), start)
+    const wEnd = Math.min(Date.UTC(y, m, day, eh, em), end)
 
-    if (next > wEnd) {
-      now = wStart.add(1, 'd');
-      continue;
+    if (wStart >= wEnd) continue
+
+    let ptr = wStart
+    for (const b of busy) {
+      if (b.e <= ptr) continue
+      if (b.s >= wEnd) break
+      while (ptr + ms <= b.s) {
+        slots.push({ start: new Date(ptr).toISOString(), end: new Date(ptr + ms).toISOString() })
+        ptr += ms
+      }
+      ptr = Math.max(ptr, b.e)
     }
-    if (next > endLimit) break;
-
-    const clash = busy.find(b => now < b.e && next > b.s);
-    
-    if (clash) {
-      now = clash.e;
-    } else {
-      slots.push({ start: now.toISOString(), end: next.toISOString() });
-      now = next;
+    while (ptr + ms <= wEnd) {
+      slots.push({ start: new Date(ptr).toISOString(), end: new Date(ptr + ms).toISOString() })
+      ptr += ms
     }
   }
-
-  return slots;
-};
+  
+  return slots
+}
 export default findAvailableSlots;

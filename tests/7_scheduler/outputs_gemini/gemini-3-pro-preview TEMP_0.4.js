@@ -1,44 +1,31 @@
-export const findAvailableSlots = async (calA, calB, { durationMinutes: dur, searchRange, workHours }) => {
-  const { DateTime, Interval } = await import('https://esm.sh/luxon@3.4.4');
-  const utc = (t) => DateTime.fromISO(t, { zone: 'utc' });
-  const bounds = Interval.fromDateTimes(utc(searchRange.start), utc(searchRange.end));
+const findAvailableSlots = async (calA, calB, { durationMinutes: dur, searchRange: rng, workHours: wh }) => {
+  const { DateTime, Interval } = await import('https://esm.sh/luxon');
+  const Z = { zone: 'utc' }, P = s => DateTime.fromISO(s, Z);
+  const [sH, sM] = wh.start.split(':'), [eH, eM] = wh.end.split(':');
   
-  const busy = [...calA, ...calB]
-    .map(s => Interval.fromDateTimes(utc(s.start), utc(s.end)))
-    .filter(i => i.isValid && i.overlaps(bounds))
-    .sort((a, b) => a.start - b.start)
-    .reduce((acc, cur) => {
-      const last = acc.at(-1);
-      return last && last.end >= cur.start ? [...acc.slice(0, -1), last.union(cur)] : [...acc, cur];
+  let cur = P(rng.start).startOf('day'), end = P(rng.end), work = [];
+  while (cur < end.plus({ days: 1 })) {
+    const wS = cur.set({ hour: sH, minute: sM }), wE = cur.set({ hour: eH, minute: eM });
+    const i = Interval.fromDateTimes(wS, wE).intersection(Interval.fromDateTimes(P(rng.start), P(rng.end)));
+    if (i?.isValid) work.push(i);
+    cur = cur.plus({ days: 1 });
+  }
+
+  const busy = [...calA, ...calB].map(x => Interval.fromDateTimes(P(x.start), P(x.end)))
+    .filter(x => x.isValid).sort((a, b) => a.start - b.start)
+    .reduce((a, c) => {
+      const l = a[a.length - 1];
+      return l && l.end >= c.start ? (a[a.length - 1] = l.union(c), a) : [...a, c];
     }, []);
 
-  const slots = [];
-  let cursor = bounds.start.startOf('day');
-  
-  while (cursor <= bounds.end) {
-    const [sH, sM] = workHours.start.split(':');
-    const [eH, eM] = workHours.end.split(':');
-    const workInt = Interval.fromDateTimes(
-      cursor.set({ hour: sH, minute: sM }), 
-      cursor.set({ hour: eH, minute: eM })
-    ).intersection(bounds);
-
-    if (workInt?.isValid) {
-      let free = [workInt];
-      busy.filter(b => b.overlaps(workInt)).forEach(b => free = free.flatMap(f => f.difference(b)));
-      
-      free.forEach(f => {
-        let s = f.start;
-        while (s.plus({ minutes: dur }) <= f.end) {
-          const e = s.plus({ minutes: dur });
-          slots.push({ start: s.toISO(), end: e.toISO() });
-          s = e;
-        }
-      });
-    }
-    cursor = cursor.plus({ days: 1 });
-  }
-  
-  return slots;
+  return busy.reduce((acc, b) => acc.flatMap(w => w.difference(b)), work)
+    .flatMap(i => {
+      const r = [];
+      let s = i.start;
+      while (s.plus({ minutes: dur }) <= i.end) {
+        r.push({ start: s.toISO(), end: (s = s.plus({ minutes: dur })).toISO() });
+      }
+      return r;
+    });
 };
 export default findAvailableSlots;

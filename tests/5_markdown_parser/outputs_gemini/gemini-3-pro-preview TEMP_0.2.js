@@ -1,5 +1,5 @@
-const parseMarkdown = async s => {
-  const { parse } = await import('https://esm.sh/marked@12.0.1')
-  return parse(s)
-}
+const parseMarkdown = async (text) => {
+  const { parse } = await import('https://esm.sh/marked');
+  return parse(text);
+};
 export default parseMarkdown;

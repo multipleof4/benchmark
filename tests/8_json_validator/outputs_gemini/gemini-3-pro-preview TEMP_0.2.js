@@ -1,10 +1,14 @@
-const validateJSON = async (d, s) => {
-  const { default: A } = await import('https://esm.sh/ajv@8.17.1');
-  const v = new A({ allErrors: true }).compile(s);
-  const b = v(d);
-  return {
-    valid: b,
-    errors: b ? [] : v.errors.map(e => `${e.instancePath} ${e.message}`.trim())
-  };
+const validateJSON = async (data, schema) => {
+  try {
+    const { default: Ajv } = await import('https://esm.sh/ajv@8.17.1');
+    const validate = new Ajv({ allErrors: true }).compile(schema);
+    const valid = validate(data);
+    return { 
+      valid, 
+      errors: valid ? [] : validate.errors.map(e => `${e.instancePath} ${e.message}`.trim()) 
+    };
+  } catch (e) {
+    return { valid: false, errors: [e.message] };
+  }
 };
 export default validateJSON;

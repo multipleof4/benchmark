@@ -1,7 +1,7 @@
-const hashPassword = async (p, s) => {
+const hashPassword = async (pwd, salt) => {
   const { scrypt } = await import('https://esm.sh/scrypt-js')
   const e = new TextEncoder()
-  const k = await scrypt(e.encode(p), e.encode(s), 1024, 8, 1, 32)
+  const k = await scrypt(e.encode(pwd), e.encode(salt), 1024, 8, 1, 32)
   return [...k].map(b => b.toString(16).padStart(2, '0')).join('')
 }
 export default hashPassword;

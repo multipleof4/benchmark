@@ -1,25 +1,23 @@
 const findShortestPath = async (graph, start, end) => {
-  const { default: PQ } = await import('https://cdn.jsdelivr.net/npm/js-priority-queue/+esm')
-  const costs = { [start]: 0 }
-  const queue = new PQ({ comparator: (a, b) => a.cost - b.cost })
+  const { default: PQ } = await import('https://esm.sh/js-priority-queue')
+  const q = new PQ({ comparator: (a, b) => a.w - b.w })
+  const dist = { [start]: 0 }
+  
+  q.queue({ n: start, w: 0 })
 
-  queue.queue({ node: start, cost: 0 })
+  while (q.length) {
+    const { n, w } = q.dequeue()
+    if (n === end) return w
+    if (w > (dist[n] ?? Infinity)) continue
 
-  while (queue.length) {
-    const { node, cost } = queue.dequeue()
-
-    if (node === end) return cost
-    if (cost > (costs[node] ?? Infinity)) continue
-
-    for (const [neighbor, weight] of Object.entries(graph[node] || {})) {
-      const nextCost = cost + weight
-      if (nextCost < (costs[neighbor] ?? Infinity)) {
-        costs[neighbor] = nextCost
-        queue.queue({ node: neighbor, cost: nextCost })
+    for (const v in graph[n]) {
+      const d = w + graph[n][v]
+      if (d < (dist[v] ?? Infinity)) {
+        dist[v] = d
+        q.queue({ n: v, w: d })
       }
     }
   }
-
   return Infinity
 }
 export default findShortestPath;

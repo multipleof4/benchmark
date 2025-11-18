@@ -1,47 +1,53 @@
-const findAvailableSlots = async (calA, calB, { durationMinutes: dur, searchRange: rng, workHours: wh }) => {
-  const { addMinutes } = await import('https://cdn.jsdelivr.net/npm/date-fns@3.6.0/+esm');
-  const parse = d => new Date(d).getTime();
-  const toIso = t => new Date(t).toISOString();
+const findAvailableSlots = async (calendarA, calendarB, { durationMinutes, searchRange, workHours }) => {
+  const { addMinutes, formatISO } = await import('https://cdn.jsdelivr.net/npm/date-fns@3.6.0/+esm');
+  const T = (d) => new Date(d).getTime();
+  const durMs = durationMinutes * 60000;
+  const rangeEnd = T(searchRange.end);
 
-  const [rStart, rEnd] = [parse(rng.start), parse(rng.end)];
-  const msDur = dur * 60000;
-
-  const busy = [...calA, ...calB]
-    .map(x => ({ s: parse(x.start), e: parse(x.end) }))
+  const busy = [...calendarA, ...calendarB]
+    .map(s => ({ s: T(s.start), e: T(s.end) }))
     .sort((a, b) => a.s - b.s)
     .reduce((acc, c) => {
-      const last = acc[acc.length - 1];
-      if (last && c.s < last.e) last.e = Math.max(last.e, c.e);
-      else acc.push({ ...c });
+      if (acc.length && c.s < acc[acc.length - 1].e) {
+        acc[acc.length - 1].e = Math.max(acc[acc.length - 1].e, c.e);
+      } else {
+        acc.push(c);
+      }
       return acc;
     }, []);
 
   const slots = [];
-  let curr = new Date(rStart);
-  curr.setUTCHours(0, 0, 0, 0);
+  let currentDay = new Date(searchRange.start);
+  currentDay.setUTCHours(0, 0, 0, 0);
 
-  while (curr.getTime() < rEnd) {
-    const [wsH, wsM] = wh.start.split(':'), [weH, weM] = wh.end.split(':');
-    const wStart = new Date(curr).setUTCHours(+wsH, +wsM, 0, 0);
-    const wEnd = new Date(curr).setUTCHours(+weH, +weM, 0, 0);
-    
-    const winStart = Math.max(wStart, rStart);
-    const winEnd = Math.min(wEnd, rEnd);
+  while (currentDay.getTime() < rangeEnd) {
+    const dateStr = currentDay.toISOString().split('T')[0];
+    const workStart = T(`${dateStr}T${workHours.start}:00Z`);
+    const workEnd = T(`${dateStr}T${workHours.end}:00Z`);
+
+    const winStart = Math.max(workStart, T(searchRange.start));
+    const winEnd = Math.min(workEnd, rangeEnd);
 
     if (winStart < winEnd) {
-      let t = winStart;
-      while (t + msDur <= winEnd) {
-        const tEnd = addMinutes(t, dur).getTime();
-        const clash = busy.find(b => t < b.e && tEnd > b.s);
-        
-        if (clash) t = clash.e;
-        else {
-          slots.push({ start: toIso(t), end: toIso(tEnd) });
-          t = tEnd;
+      let cursor = winStart;
+      
+      for (const b of busy) {
+        if (b.e <= cursor) continue;
+        if (b.s >= winEnd) break;
+
+        while (cursor + durMs <= b.s) {
+          slots.push({ start: formatISO(cursor), end: formatISO(addMinutes(cursor, durationMinutes)) });
+          cursor += durMs;
         }
+        cursor = Math.max(cursor, b.e);
+      }
+
+      while (cursor + durMs <= winEnd) {
+        slots.push({ start: formatISO(cursor), end: formatISO(addMinutes(cursor, durationMinutes)) });
+        cursor += durMs;
       }
     }
-    curr.setUTCDate(curr.getUTCDate() + 1);
+    currentDay.setUTCDate(currentDay.getUTCDate() + 1);
   }
 
   return slots;

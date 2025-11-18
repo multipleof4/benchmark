@@ -1,17 +1,24 @@
-export const processCSV = async (str, { filterColumn: fc, filterValue: fv, groupBy: gb, aggregateColumn: ac, operation: op }) => {
-  const [{ parse }, { filter, groupBy, map, sum }] = await Promise.all([
-    import('https://cdn.jsdelivr.net/npm/papaparse@5.4.1/+esm'),
-    import('https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/+esm')
-  ])
+const processCSV = async (csvString, config) => {
+  const { default: Papa } = await import('https://esm.sh/papaparse@5.4.1');
+  const { filterColumn: fc, filterValue: fv, groupBy: gb, aggregateColumn: ac, operation: op } = config;
 
-  const { data } = parse(str, { header: true, skipEmptyLines: true })
-  const rows = filter(data, r => r[fc] == fv)
+  const { data } = Papa.parse(csvString, { header: true, skipEmptyLines: true });
 
-  return map(groupBy(rows, gb), (group, key) => {
-    const vals = map(group, r => +r[ac] || 0)
-    const total = sum(vals)
-    const res = op === 'count' ? group.length : op === 'sum' ? total : total / group.length
-    return { [gb]: key, result: res }
-  })
-}
+  const groups = data.reduce((acc, row) => {
+    if (row[fc] == fv) {
+      const key = row[gb];
+      const val = +row[ac] || 0;
+      
+      acc[key] ??= { sum: 0, count: 0 };
+      acc[key].sum += val;
+      acc[key].count++;
+    }
+    return acc;
+  }, {});
+
+  return Object.entries(groups).map(([key, { sum, count }]) => ({
+    [gb]: key,
+    result: op === 'count' ? count : op === 'sum' ? sum : sum / count
+  }));
+};
 export default processCSV;

@@ -1,48 +1,59 @@
-const findAvailableSlots = async (calA, calB, { durationMinutes: dur, searchRange: rng, workHours: wh }) => {
-  const [djs, utc] = await Promise.all([
-    import('https://esm.sh/dayjs@1.11.10'),
-    import('https://esm.sh/dayjs@1.11.10/plugin/utc')
-  ]).then(m => m.map(i => i.default));
-
-  djs.extend(utc);
-  const U = (d) => djs(d).utc();
-  const [wsH, wsM] = wh.start.split(':').map(Number);
-  const [weH, weM] = wh.end.split(':').map(Number);
+const findAvailableSlots = async (calA, calB, { durationMinutes: dur, searchRange: range, workHours: wh }) => {
+  const { parseISO } = await import('https://esm.sh/date-fns@2.30.0');
   
+  const toMs = (t) => parseISO(t).getTime();
+  const getMins = (t) => { const [h, m] = t.split(':'); return h * 60 + +m; };
+  
+  const [whStart, whEnd] = [getMins(wh.start), getMins(wh.end)];
+  const [rStart, rEnd] = [toMs(range.start), toMs(range.end)];
+  const durMs = dur * 60000;
+
   const busy = [...calA, ...calB]
-    .map(s => ({ s: U(s.start), e: U(s.end) }))
-    .sort((a, b) => a.s - b.s)
-    .reduce((acc, c) => {
-      const last = acc[acc.length - 1];
-      if (last && c.s.diff(last.e) < 0) last.e = c.e.diff(last.e) > 0 ? c.e : last.e;
-      else acc.push(c);
-      return acc;
-    }, []);
+    .map(s => ({ s: toMs(s.start), e: toMs(s.end) }))
+    .sort((a, b) => a.s - b.s);
+
+  const merged = [];
+  if (busy.length) {
+    let curr = busy[0];
+    for (let i = 1; i < busy.length; i++) {
+      if (busy[i].s < curr.e) curr.e = Math.max(curr.e, busy[i].e);
+      else { merged.push(curr); curr = busy[i]; }
+    }
+    merged.push(curr);
+  }
+
+  const gaps = [];
+  let ptr = rStart;
+  const relBusy = [...merged.filter(b => b.e > rStart && b.s < rEnd), { s: rEnd, e: rEnd }];
+
+  for (const b of relBusy) {
+    const s = Math.max(ptr, rStart), e = Math.min(b.s, rEnd);
+    if (e - s >= durMs) gaps.push({ s, e });
+    ptr = Math.max(ptr, b.e);
+  }
 
   const slots = [];
-  let curDay = U(rng.start).startOf('day');
-  const limit = U(rng.end);
-
-  while (curDay.isBefore(limit)) {
-    let wStart = curDay.hour(wsH).minute(wsM);
-    let wEnd = curDay.hour(weH).minute(weM);
-
-    if (wStart.isBefore(U(rng.start))) wStart = U(rng.start);
-    if (wEnd.isAfter(limit)) wEnd = limit;
-
-    let ptr = wStart;
-    while (ptr.add(dur, 'm').diff(wEnd) <= 0) {
-      const next = ptr.add(dur, 'm');
-      const clash = busy.find(b => ptr.isBefore(b.e) && next.isAfter(b.s));
+  for (const g of gaps) {
+    let t = g.s;
+    while (t + durMs <= g.e) {
+      const d = new Date(t);
+      const curM = d.getUTCHours() * 60 + d.getUTCMinutes();
       
-      if (clash) ptr = clash.e;
-      else {
-        slots.push({ start: ptr.format(), end: next.format() });
-        ptr = next;
+      if (curM >= whStart && curM + dur <= whEnd) {
+        slots.push({ start: d.toISOString(), end: new Date(t + durMs).toISOString() });
+        t += durMs;
+      } else {
+        if (curM < whStart) {
+          d.setUTCHours(0, whStart, 0, 0);
+        } else {
+          d.setUTCDate(d.getUTCDate() + 1);
+          d.setUTCHours(0, whStart, 0, 0);
+        }
+        t = Math.max(t, d.getTime());
       }
     }
-    curDay = curDay.add(1, 'day');
   }
+
   return slots;
 };
 export default findAvailableSlots;

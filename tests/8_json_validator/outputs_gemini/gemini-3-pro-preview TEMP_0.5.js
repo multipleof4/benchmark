@@ -1,7 +1,10 @@
 const validateJSON = async (data, schema) => {
-  const Ajv = (await import('https://esm.sh/ajv@8.17.1')).default
+  const { default: Ajv } = await import('https://esm.sh/ajv@8')
   const validate = new Ajv({ allErrors: true }).compile(schema)
   const valid = validate(data)
-  return { valid, errors: validate.errors?.map(e => e.message) ?? [] }
+  return {
+    valid,
+    errors: valid ? [] : validate.errors.map(e => `${e.instancePath} ${e.message}`.trim())
+  }
 }
 export default validateJSON;

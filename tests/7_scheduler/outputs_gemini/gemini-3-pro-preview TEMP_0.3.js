@@ -1,55 +1,46 @@
-export const findAvailableSlots = async (calendarA, calendarB, { durationMinutes, searchRange, workHours }) => {
-  const { default: dayjs } = await import('https://esm.sh/dayjs');
-  const { default: utc } = await import('https://esm.sh/dayjs/plugin/utc');
-  dayjs.extend(utc);
-
-  const parse = (d) => dayjs.utc(d);
-  const msDuration = durationMinutes * 60000;
-  const rangeStart = parse(searchRange.start);
-  const rangeEnd = parse(searchRange.end);
-
-  let busy = [...calendarA, ...calendarB]
-    .map(s => ({ s: parse(s.start).valueOf(), e: parse(s.end).valueOf() }))
-    .sort((a, b) => a.s - b.s)
-    .reduce((acc, curr) => {
-      const last = acc[acc.length - 1];
-      if (last && curr.s < last.e) last.e = Math.max(last.e, curr.e);
-      else acc.push(curr);
-      return acc;
+const findAvailableSlots = async (calA, calB, { durationMinutes: dur, searchRange: rng, workHours: wh }) => {
+  const { DateTime: D, Interval: I } = await import('https://esm.sh/luxon@3.4.4');
+  const utc = { zone: 'utc' };
+  const parse = t => D.fromISO(t, utc);
+  
+  const busy = [...calA, ...calB]
+    .map(s => I.fromDateTimes(parse(s.start), parse(s.end)))
+    .filter(i => i.isValid)
+    .sort((a, b) => a.start - b.start)
+    .reduce((acc, cur) => {
+      const last = acc.at(-1);
+      return (last && last.end >= cur.start) 
+        ? (acc[acc.length - 1] = last.union(cur), acc) 
+        : [...acc, cur];
     }, []);
 
+  const searchI = I.fromDateTimes(parse(rng.start), parse(rng.end));
+  const [sH, sM] = wh.start.split(':');
+  const [eH, eM] = wh.end.split(':');
   const slots = [];
-  let currentDay = rangeStart.startOf('day');
-  const finalDay = rangeEnd.endOf('day');
 
-  while (currentDay.isBefore(finalDay) || currentDay.isSame(finalDay)) {
-    const dateStr = currentDay.format('YYYY-MM-DD');
-    let start = parse(`${dateStr}T${workHours.start}`);
-    let end = parse(`${dateStr}T${workHours.end}`);
+  let day = searchI.start.startOf('day');
+  while (day < searchI.end) {
+    const wStart = day.set({ hour: sH, minute: sM });
+    const wEnd = day.set({ hour: eH, minute: eM });
+    const workI = I.fromDateTimes(wStart, wEnd).intersection(searchI);
 
-    if (start.isBefore(rangeStart)) start = rangeStart;
-    if (end.isAfter(rangeEnd)) end = rangeEnd;
-
-    let ptr = start.valueOf();
-    const limit = end.valueOf();
-
-    while (ptr + msDuration <= limit) {
-      const slotEnd = ptr + msDuration;
-      const conflict = busy.find(b => b.s < slotEnd && b.e > ptr);
-
-      if (conflict) {
-        ptr = conflict.e;
-      } else {
-        slots.push({
-          start: dayjs(ptr).utc().format(),
-          end: dayjs(slotEnd).utc().format()
-        });
-        ptr += msDuration;
+    if (workI?.isValid) {
+      let cur = workI.start;
+      while (cur.plus({ minutes: dur }) <= workI.end) {
+        const slotI = I.after(cur, { minutes: dur });
+        const clash = busy.find(b => b.overlaps(slotI));
+        
+        if (clash) {
+          cur = clash.end > cur ? clash.end : cur.plus({ minutes: 1 });
+        } else {
+          slots.push({ start: slotI.start.toISO(), end: slotI.end.toISO() });
+          cur = slotI.end;
+        }
       }
     }
-    currentDay = currentDay.add(1, 'day');
+    day = day.plus({ days: 1 });
   }
-
   return slots;
 };
 export default findAvailableSlots;

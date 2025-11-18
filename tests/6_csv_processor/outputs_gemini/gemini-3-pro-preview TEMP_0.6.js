@@ -1,20 +1,19 @@
 const processCSV = async (csv, { filterColumn: fc, filterValue: fv, groupBy: gb, aggregateColumn: ac, operation: op }) => {
-  const { default: Papa } = await import('https://cdn.jsdelivr.net/npm/papaparse@5.4.1/+esm')
-  const { data } = Papa.parse(csv, { header: true, skipEmptyLines: true })
+  const [{ csvParse }, { rollup, sum, mean }] = await Promise.all([
+    import('https://esm.sh/d3-dsv@3'),
+    import('https://esm.sh/d3-array@3')
+  ]);
 
-  const groups = data.reduce((acc, row) => {
-    if (row[fc] == fv) {
-      const k = row[gb], v = +row[ac] || 0
-      acc[k] = acc[k] || { s: 0, c: 0 }
-      acc[k].s += v
-      acc[k].c++
-    }
-    return acc
-  }, {})
-
-  return Object.entries(groups).map(([k, { s, c }]) => ({
-    [gb]: k,
-    result: op === 'count' ? c : op === 'avg' ? s / c : s
-  }))
-}
+  return Array.from(
+    rollup(
+      csvParse(csv).filter(d => d[fc] == fv),
+      g => {
+        const v = g.map(d => +d[ac] || 0);
+        return op === 'count' ? v.length : op === 'sum' ? sum(v) : mean(v);
+      },
+      d => d[gb]
+    ),
+    ([k, v]) => ({ [gb]: k, result: v })
+  );
+};
 export default processCSV;

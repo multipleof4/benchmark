@@ -1,14 +1,13 @@
 const analyzeGPS = async (readings, boundary) => {
-  const { booleanPointInPolygon, point, lineString, length } = await import('https://esm.sh/@turf/turf')
+  const T = await import('https://esm.sh/@turf/turf');
   
-  const path = readings
-    .filter(({ loc }) => booleanPointInPolygon(point(loc), boundary, { ignoreBoundary: true }))
+  const pts = readings
+    .filter(({ loc }) => T.booleanPointInPolygon(T.point(loc), boundary, { ignoreBoundary: true }))
     .sort((a, b) => a.ts - b.ts)
-    .map(({ loc }) => loc)
+    .map(r => r.loc);
 
-  if (path.length < 2) return 0
-
-  const dist = length(lineString(path), { units: 'kilometers' })
-  return Math.round(dist * 100) / 100
-}
+  return pts.length < 2 
+    ? 0 
+    : +T.length(T.lineString(pts), { units: 'kilometers' }).toFixed(2);
+};
 export default analyzeGPS;

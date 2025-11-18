@@ -1,18 +1,20 @@
-const processCSV = async (csv, { filterColumn: fc, filterValue: fv, groupBy: gb, aggregateColumn: ac, operation: op }) => {
-    const { parse } = (await import('https://cdn.jsdelivr.net/npm/papaparse@5.4.1/+esm')).default
-    const { data } = parse(csv, { header: true, skipEmptyLines: true })
+const processCSV = async (csvString, { filterColumn, filterValue, groupBy, aggregateColumn, operation }) => {
+  const { csvParse, rollup, sum, mean } = await import('https://esm.sh/d3@7');
+  
+  const toNum = d => +d[aggregateColumn] || 0;
+  
+  const aggregators = {
+    sum: g => sum(g, toNum),
+    avg: g => mean(g, toNum),
+    count: g => g.length
+  };
 
-    return Object.entries(data.reduce((a, r) => {
-        if (r[fc] == fv) {
-            const k = r[gb], v = +r[ac] || 0
-            a[k] ??= { s: 0, c: 0 }
-            a[k].s += v
-            a[k].c++
-        }
-        return a
-    }, {})).map(([k, { s, c }]) => ({
-        [gb]: k,
-        result: op === 'count' ? c : op === 'avg' ? s / c : s
-    }))
-}
+  const data = csvParse(csvString).filter(row => row[filterColumn] == filterValue);
+  const grouped = rollup(data, aggregators[operation], d => d[groupBy]);
+
+  return Array.from(grouped, ([key, val]) => ({
+    [groupBy]: key,
+    result: val
+  }));
+};
 export default processCSV;

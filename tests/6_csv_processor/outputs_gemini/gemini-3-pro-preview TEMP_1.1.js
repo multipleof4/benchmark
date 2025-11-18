@@ -1,21 +1,17 @@
-const processCSV = async (csvString, config) => {
-  const { csvParse } = await import('https://esm.sh/d3-dsv@3');
-  const { filterColumn: fc, filterValue: fv, groupBy: gb, aggregateColumn: ac, operation: op } = config;
-
-  const groups = csvParse(csvString).reduce((acc, row) => {
-    if (row[fc] == fv) {
-      const key = row[gb];
-      const val = +row[ac] || 0;
-      acc[key] = acc[key] || { sum: 0, count: 0 };
-      acc[key].sum += val;
-      acc[key].count++;
-    }
-    return acc;
-  }, {});
-
-  return Object.entries(groups).map(([key, { sum, count }]) => ({
-    [gb]: key,
-    result: op === 'avg' ? sum / count : op === 'count' ? count : sum
-  }));
-};
+const processCSV = async (csv, { filterColumn: fCol, filterValue: fVal, groupBy: gBy, aggregateColumn: aCol, operation: op }) => {
+  const { csvParse, rollup, sum } = await import('https://cdn.jsdelivr.net/npm/d3@7/+esm')
+  
+  return Array.from(
+    rollup(
+      csvParse(csv).filter(r => r[fCol] == fVal),
+      g => {
+        if (op === 'count') return g.length
+        const nums = g.map(r => +r[aCol] || 0), total = sum(nums)
+        return op === 'sum' ? total : total / nums.length
+      },
+      d => d[gBy]
+    ),
+    ([k, v]) => ({ [gBy]: k, result: v })
+  )
+}
 export default processCSV;

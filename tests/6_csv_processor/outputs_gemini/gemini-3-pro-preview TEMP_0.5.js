@@ -1,18 +1,21 @@
-const processCSV = async (csv, { filterColumn: fc, filterValue: fv, groupBy: gb, aggregateColumn: ac, operation: op }) => {
-  const [{ default: Papa }, { default: _ }] = await Promise.all([
-    import('https://esm.sh/papaparse@5.4.1'),
-    import('https://esm.sh/lodash@4.17.21')
-  ])
-
-  const { data } = Papa.parse(csv, { header: true, skipEmptyLines: true })
+const processCSV = async (csvStr, { filterColumn: fCol, filterValue: fVal, groupBy: gBy, aggregateColumn: aggCol, operation: op }) => {
+  const { default: Papa } = await import('https://cdn.jsdelivr.net/npm/papaparse@5.4.1/+esm')
+  const { data } = Papa.parse(csvStr, { header: true, skipEmptyLines: true })
   
-  return _.map(_.groupBy(_.filter(data, r => r[fc] == fv), gb), (rows, k) => {
-    const vals = rows.map(r => +r[ac] || 0)
-    const sum = _.sum(vals)
-    return {
-      [gb]: k,
-      result: op === 'count' ? vals.length : op === 'sum' ? sum : sum / vals.length
+  const groups = data.reduce((acc, row) => {
+    if (row[fCol] == fVal) {
+      const key = row[gBy]
+      const val = +row[aggCol] || 0
+      acc[key] = acc[key] || { s: 0, c: 0 }
+      acc[key].s += val
+      acc[key].c++
     }
-  })
+    return acc
+  }, {})
+
+  return Object.entries(groups).map(([key, { s, c }]) => ({
+    [gBy]: key,
+    result: op === 'count' ? c : op === 'avg' ? s / c : s
+  }))
 }
 export default processCSV;

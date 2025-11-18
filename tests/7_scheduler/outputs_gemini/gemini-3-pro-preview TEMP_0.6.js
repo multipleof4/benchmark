@@ -1,43 +1,49 @@
-export const findAvailableSlots = async (cal1, cal2, { durationMinutes: dur, searchRange: rng, workHours: wh }) => {
-  const { DateTime, Interval } = await import('https://cdn.skypack.dev/luxon');
-  const zone = 'utc';
-  const fromISO = t => DateTime.fromISO(t, { zone });
-  const searchIv = Interval.fromDateTimes(fromISO(rng.start), fromISO(rng.end));
+const findAvailableSlots = async (calA, calB, { durationMinutes: dur, searchRange: rng, workHours: wh }) => {
+  const { parseISO, addMinutes } = await import('https://cdn.jsdelivr.net/npm/date-fns@2.30.0/+esm');
+  const [startR, endR] = [parseISO(rng.start), parseISO(rng.end)];
 
-  const busy = [...cal1, ...cal2]
-    .map(s => Interval.fromDateTimes(fromISO(s.start), fromISO(s.end)))
-    .filter(i => i.isValid && i.overlaps(searchIv))
-    .sort((a, b) => a.start - b.start)
-    .reduce((acc, cur) => {
+  const busy = [...calA, ...calB]
+    .map(x => ({ s: parseISO(x.start), e: parseISO(x.end) }))
+    .sort((a, b) => a.s - b.s)
+    .reduce((acc, c) => {
       const last = acc[acc.length - 1];
-      return last && (last.overlaps(cur) || last.abutsStart(cur))
-        ? [...acc.slice(0, -1), last.union(cur)]
-        : [...acc, cur];
+      if (last && c.s < last.e) last.e = new Date(Math.max(last.e, c.e));
+      else acc.push(c);
+      return acc;
     }, []);
 
   const slots = [];
-  let curDate = searchIv.start.startOf('day');
-  const [wsH, wsM] = wh.start.split(':');
-  const [weH, weM] = wh.end.split(':');
+  let currDate = new Date(Date.UTC(startR.getUTCFullYear(), startR.getUTCMonth(), startR.getUTCDate()));
+  const lastDate = new Date(Date.UTC(endR.getUTCFullYear(), endR.getUTCMonth(), endR.getUTCDate()));
 
-  while (curDate < searchIv.end) {
-    const workStart = curDate.set({ hour: wsH, minute: wsM });
-    const workEnd = curDate.set({ hour: weH, minute: weM });
-    const workIv = Interval.fromDateTimes(workStart, workEnd).intersection(searchIv);
+  while (currDate <= lastDate) {
+    const dStr = currDate.toISOString().split('T')[0];
+    const wStart = parseISO(`${dStr}T${wh.start}:00Z`);
+    const wEnd = parseISO(`${dStr}T${wh.end}:00Z`);
 
-    if (workIv && workIv.isValid) {
-      let free = [workIv];
-      busy.forEach(b => { free = free.flatMap(f => f.difference(b)); });
-      
-      free.forEach(iv => {
-        iv.splitBy({ minutes: dur }).forEach(chunk => {
-          if (Math.abs(chunk.length('minutes') - dur) < 0.01) {
-            slots.push({ start: chunk.start.toISO(), end: chunk.end.toISO() });
-          }
-        });
-      });
+    const winStart = wStart < startR ? startR : wStart;
+    const winEnd = wEnd > endR ? endR : wEnd;
+
+    if (winStart < winEnd) {
+      let cursor = winStart;
+      const relevant = busy.filter(b => b.s < winEnd && b.e > winStart);
+
+      for (const b of relevant) {
+        while (addMinutes(cursor, dur) <= b.s) {
+          const next = addMinutes(cursor, dur);
+          slots.push({ start: cursor.toISOString(), end: next.toISOString() });
+          cursor = next;
+        }
+        if (cursor < b.e) cursor = b.e;
+      }
+
+      while (addMinutes(cursor, dur) <= winEnd) {
+        const next = addMinutes(cursor, dur);
+        slots.push({ start: cursor.toISOString(), end: next.toISOString() });
+        cursor = next;
+      }
     }
-    curDate = curDate.plus({ days: 1 });
+    currDate.setUTCDate(currDate.getUTCDate() + 1);
   }
 
   return slots;

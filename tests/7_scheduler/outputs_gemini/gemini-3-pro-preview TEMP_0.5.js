@@ -1,41 +1,51 @@
-export const findAvailableSlots = async (c1, c2, { durationMinutes: d, searchRange: r, workHours: w }) => {
-  const { parseISO } = await import('https://cdn.jsdelivr.net/npm/date-fns@2.30.0/+esm');
-  const toMs = x => parseISO(x).getTime();
-  const [wsH, wsM] = w.start.split(':').map(Number);
-  const [weH, weM] = w.end.split(':').map(Number);
-  const rStart = toMs(r.start), rEnd = toMs(r.end), durMs = d * 6e4;
+const findAvailableSlots = async (calA, calB, { durationMinutes: dur, searchRange: rng, workHours: wh }) => {
+  const { addMinutes } = await import('https://esm.sh/date-fns@3');
+  const D = (d) => new Date(d);
+  const [sH, sM] = wh.start.split(':').map(Number);
+  const [eH, eM] = wh.end.split(':').map(Number);
+  const startMins = sH * 60 + sM;
+  const endMins = eH * 60 + eM;
 
-  const busy = [...c1, ...c2]
-    .map(x => ({ s: toMs(x.start), e: toMs(x.end) }))
-    .sort((a, b) => a.s - b.s)
-    .reduce((acc, cur) => {
-      if (acc.length && cur.s <= acc[acc.length - 1].e) acc[acc.length - 1].e = Math.max(acc[acc.length - 1].e, cur.e);
-      else acc.push(cur);
-      return acc;
-    }, []);
-
-  let free = [], curr = new Date(rStart);
-  curr.setUTCHours(0, 0, 0, 0);
-  
-  while (curr.getTime() < rEnd) {
-    const s = Math.max(new Date(curr).setUTCHours(wsH, wsM, 0, 0), rStart);
-    const e = Math.min(new Date(curr).setUTCHours(weH, weM, 0, 0), rEnd);
-    if (s < e) free.push({ s, e });
-    curr.setUTCDate(curr.getUTCDate() + 1);
+  let busy = [...calA, ...calB].map(x => ({ s: D(x.start), e: D(x.end) })).sort((a, b) => a.s - b.s);
+  let merged = [], c = busy[0];
+  if (c) {
+    for (let i = 1; i < busy.length; i++) busy[i].s < c.e ? c.e = new Date(Math.max(c.e, busy[i].e)) : (merged.push(c), c = busy[i]);
+    merged.push(c);
   }
 
-  return busy.reduce((acc, b) => acc.flatMap(f => {
-    if (b.e <= f.s || b.s >= f.e) return [f];
-    return [
-      ...(f.s < b.s ? [{ s: f.s, e: b.s }] : []),
-      ...(f.e > b.e ? [{ s: b.e, e: f.e }] : [])
-    ];
-  }), free).flatMap(f => {
-    const slots = [];
-    for (let t = f.s; t + durMs <= f.e; t += durMs) {
-      slots.push({ start: new Date(t).toISOString(), end: new Date(t + durMs).toISOString() });
+  let slots = [], cur = D(rng.start), end = D(rng.end), bIdx = 0;
+  while (cur < end) {
+    const curMins = cur.getUTCHours() * 60 + cur.getUTCMinutes();
+    if (curMins < startMins) {
+      cur.setUTCHours(sH, sM, 0, 0);
+      continue;
     }
-    return slots;
-  });
+
+    const nxt = addMinutes(cur, dur);
+    const nxtMins = nxt.getUTCHours() * 60 + nxt.getUTCMinutes();
+    const isNextDay = nxt.getUTCDate() !== cur.getUTCDate();
+    
+    if ((isNextDay && nxtMins !== 0) || (!isNextDay && nxtMins > endMins) || (isNextDay && nxtMins === 0 && endMins < 1440)) {
+      cur.setUTCDate(cur.getUTCDate() + 1);
+      cur.setUTCHours(sH, sM, 0, 0);
+      continue;
+    }
+
+    if (nxt > end) break;
+
+    while (bIdx < merged.length && merged[bIdx].e <= cur) bIdx++;
+    let overlap = null;
+    for (let i = bIdx; i < merged.length; i++) {
+      if (merged[i].s >= nxt) break;
+      if (merged[i].s < nxt && merged[i].e > cur) { overlap = merged[i]; break; }
+    }
+
+    if (overlap) cur = overlap.e;
+    else {
+      slots.push({ start: cur.toISOString(), end: nxt.toISOString() });
+      cur = nxt;
+    }
+  }
+  return slots;
 };
 export default findAvailableSlots;

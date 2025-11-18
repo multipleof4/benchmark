@@ -1,18 +1,21 @@
-const processCSV = async (csv, cfg) => {
-  const [{default: P}, {default: _}] = await Promise.all([
-    import('https://cdn.jsdelivr.net/npm/papaparse@5.4.1/+esm'),
-    import('https://cdn.jsdelivr.net/npm/lodash@4.17.21/+esm')
-  ]);
+const processCSV = async (csv, { filterColumn, filterValue, groupBy, aggregateColumn, operation }) => {
+  const { parse } = await import('https://cdn.jsdelivr.net/npm/papaparse@5.4.1/+esm');
+  const { data } = parse(csv, { header: true, skipEmptyLines: true });
 
-  const {data} = P.parse(csv, {header: true, skipEmptyLines: true});
-  const {filterColumn: fc, filterValue: fv, groupBy: gb, aggregateColumn: ac, operation: op} = cfg;
+  const groups = data.reduce((acc, row) => {
+    if (row[filterColumn] == filterValue) {
+      const key = row[groupBy];
+      const val = +row[aggregateColumn] || 0;
+      acc[key] ||= { sum: 0, count: 0 };
+      acc[key].sum += val;
+      acc[key].count++;
+    }
+    return acc;
+  }, {});
 
-  return _.map(_.groupBy(_.filter(data, r => r[fc] == fv), gb), (rows, key) => {
-    const vals = rows.map(r => +r[ac] || 0), sum = _.sum(vals);
-    return {
-      [gb]: key,
-      result: op === 'count' ? vals.length : op === 'sum' ? sum : sum / vals.length
-    };
-  });
+  return Object.entries(groups).map(([key, { sum, count }]) => ({
+    [groupBy]: key,
+    result: operation === 'count' ? count : operation === 'sum' ? sum : sum / count
+  }));
 };
 export default processCSV;
