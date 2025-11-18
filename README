@@ -17,3 +17,18 @@ google/gemini-2.5-pro
 openrouter/sherlock-think-alpha
 <!-- MODELS_END -->
 
+<!-- GEMINI_START -->
+google/gemini-3-pro-preview TEMP:1.1
+google/gemini-3-pro-preview TEMP:1
+google/gemini-3-pro-preview TEMP:0.9
+google/gemini-3-pro-preview TEMP:0.8
+google/gemini-3-pro-preview TEMP:0.7
+google/gemini-3-pro-preview TEMP:0.6
+google/gemini-3-pro-preview TEMP:0.5
+google/gemini-3-pro-preview TEMP:0.4
+google/gemini-3-pro-preview TEMP:0.3
+google/gemini-3-pro-preview TEMP:0.2
+google/gemini-3-pro-preview TEMP:0.1
+google/gemini-3-pro-preview TEMP:0
+<!-- MODELS_END -->
+
