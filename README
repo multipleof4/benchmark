@@ -18,6 +18,7 @@ openrouter/sherlock-think-alpha
 <!-- MODELS_END -->
 
 The following will be available on lynchmark.com/gemini
+We will use google api instead of openrouter using secret GOOGLE_KEY
 
 <!-- GEMINI_START -->
 gemini-3-pro-preview TEMP:1.1
