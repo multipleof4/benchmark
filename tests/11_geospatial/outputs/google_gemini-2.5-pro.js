@@ -1,18 +1,18 @@
 const analyzeGPS = async (readings, boundary) => {
-  const t = await import('https://cdn.jsdelivr.net/npm/@turf/turf');
+  const { booleanPointInPolygon, lineString, length } = await import('https://cdn.jsdelivr.net/npm/@turf/turf/+esm');
 
-  const sortedLocations = readings
-    .filter(r => t.booleanPointInPolygon(r.loc, boundary, { ignoreBoundary: true }))
+  const sortedCoords = readings
+    .filter(({ loc }) => booleanPointInPolygon(loc, boundary, { ignoreBoundary: true }))
     .sort((a, b) => a.ts - b.ts)
-    .map(r => r.loc);
+    .map(({ loc }) => loc);
 
-  if (sortedLocations.length < 2) {
+  if (sortedCoords.length < 2) {
     return 0;
   }
 
-  const path = t.lineString(sortedLocations);
-  const length = t.length(path, { units: 'kilometers' });
+  const path = lineString(sortedCoords);
+  const dist = length(path, { units: 'kilometers' });
 
-  return Math.round(length * 100) / 100;
+  return Math.round(dist * 1e2) / 1e2;
 };
 export default analyzeGPS;

@@ -1,20 +1,21 @@
+const libCache={},load=u=>libCache[u]??=import(u);
+
 async function processCSV(csv,cfg){
- const[{default:Papa},{groupBy}]=await Promise.all([
-  import('https://cdn.jsdelivr.net/npm/papaparse@5.4.1/+esm'),
-  import('https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/+esm')
- ]);
- const{filterColumn:f,filterValue:v,groupBy:g,aggregateColumn:a,operation:o}=cfg;
- const rows=Papa.parse(csv,{header:true,skipEmptyLines:true}).data.filter(r=>r[f]==v);
- const groups=groupBy(rows,r=>r[g]);
- return Object.entries(groups).map(([k,list])=>{
-  const nums=list.map(r=>{
-   const n=Number(r[a]);
-   return Number.isFinite(n)?n:0;
+  const [{csvParse},{groupBy}]=await Promise.all([
+    load('https://cdn.jsdelivr.net/npm/d3-dsv@3.0.1/+esm'),
+    load('https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/+esm')
+  ]);
+  const {filterColumn:f,filterValue:v,groupBy:k,aggregateColumn:a,operation:o}=cfg;
+  const rows=csvParse(csv).filter(r=>r[f]==v);
+  const grouped=groupBy(rows,r=>r[k]);
+  return Object.entries(grouped).map(([g,list])=>{
+    const nums=list.map(r=>{
+      const n=+r[a];
+      return Number.isFinite(n)?n:0;
+    });
+    const sum=nums.reduce((s,n)=>s+n,0);
+    const result=o==='count'?list.length:o==='sum'?sum:list.length?sum/list.length:0;
+    return {[k]:g,result};
   });
-  const sum=nums.reduce((t,n)=>t+n,0);
-  const count=list.length;
-  const result=o==='sum'?sum:o==='avg'?sum/count:count;
-  return{[g]:k,result};
- });
 }
 export default processCSV;

@@ -11,9 +11,7 @@ export async function createStreamVisualizer(asyncIterable, options) {
       : alpha * value + (1 - alpha) * prevEma;
     
     data.push({ timestamp, value, ema });
-    
     if (data.length > maxPoints) data.shift();
-    
     prevEma = ema;
   }
   

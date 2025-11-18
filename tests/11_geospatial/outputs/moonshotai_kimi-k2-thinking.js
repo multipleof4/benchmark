@@ -1,12 +1,11 @@
-async function analyzeGPS(readings, boundary) {
-  try {
-    if (!Array.isArray(readings) || !boundary) return 0;
-    const turf = await import('https://cdn.skypack.dev/@turf/turf'),
-          v = readings.filter(r => r?.loc && turf.booleanPointInPolygon(r.loc, boundary, {ignoreBoundary: true}))
-                     .sort((a, b) => a.ts - b.ts);
-    return v.length < 2 ? 0 : Math.round(turf.length(turf.lineString(v.map(r => r.loc)), {units: 'kilometers'}) * 100) / 100;
-  } catch {
-    return 0;
-  }
+export async function analyzeGPS(readings, boundary) {
+  const { booleanPointInPolygon, lineString, length } = await import('https://cdn.skypack.dev/@turf/turf');
+  
+  const pts = readings
+    .filter(r => booleanPointInPolygon(r.loc, boundary))
+    .sort((a, b) => a.ts - b.ts)
+    .map(r => r.loc);
+  
+  return pts.length < 2 ? 0 : +length(lineString(pts)).toFixed(2);
 }
 export default analyzeGPS;

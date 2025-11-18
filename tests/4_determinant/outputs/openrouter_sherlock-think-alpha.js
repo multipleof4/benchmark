@@ -1,2 +1,2 @@
-async function calculateDeterminant(matrix){const math=await import('https://esm.sh/mathjs');return math.det(matrix);}
+async function calculateDeterminant(m){const{det}=await import('https://esm.sh/mathjs');return det(m);}
 export default calculateDeterminant;

@@ -1,27 +1,17 @@
-async function processCSV(csv,{filterColumn,filterValue,groupBy,aggregateColumn,operation}){
-  const Papa=(await import('https://cdn.jsdelivr.net/npm/papaparse@5/+esm')).default;
-  const{data}=Papa.parse(csv,{header:true,skipEmptyLines:true});
-  const groups=new Map();
-  for(const row of data){
-    if(row[filterColumn]==filterValue){
-      const key=row[groupBy];
-      const val=Number(row[aggregateColumn])||0;
-      const g=groups.get(key)||{sum:0,count:0};
-      g.sum+=val;
-      g.count++;
-      groups.set(key,g);
-    }
+async function processCSV(csv,config){
+  const Papa=(await import('https://cdn.skypack.dev/papaparse')).default;
+  const parsed=Papa.parse(csv,{header:!0}).data;
+  const{filterColumn:fc,filterValue:fv,groupBy:gb,aggregateColumn:ac,operation:op}=config;
+  const filtered=parsed.filter(r=>r[fc]==fv);
+  const groups=new Map;
+  for(const r of filtered){
+    const gv=r[gb];
+    const v=Number(r[ac])||0;
+    const g=groups.get(gv)||{sum:0,count:0};
+    g.sum+=v;
+    g.count++;
+    groups.set(gv,g);
   }
-  const result=[];
-  for(const[key,g]of groups){
-    let res;
-    switch(operation){
-      case'sum':res=g.sum;break;
-      case'avg':res=g.sum/g.count;break;
-      case'count':res=g.count;break;
-    }
-    result.push({[groupBy]:key,result:res});
-  }
-  return result;
+  return Array.from(groups,(g,gv)=>(({[gb]:gv,result:op==='sum'?g.sum:op==='count'?g.count:g.sum/g.count})));
 }
 export default processCSV;

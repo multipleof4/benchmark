@@ -1,44 +1,66 @@
-async function findAvailableSlots(a,b,c){
- const {DateTime}=await import('https://cdn.skypack.dev/luxon')
- const {durationMinutes:d,searchRange:s,workHours:w}=c
- const r=[DateTime.fromISO(s.start),DateTime.fromISO(s.end)]
- const hm=q=>q.split(':').map(Number)
- const [sh,sm]=hm(w.start)
- const [eh,em]=hm(w.end)
- const clamp=o=>{
-  let x=DateTime.fromISO(o.start)
-  let y=DateTime.fromISO(o.end)
-  if(+y<=+r[0]||+x>=+r[1])return
-  if(+x<+r[0])x=r[0]
-  if(+y>+r[1])y=r[1]
-  if(+y<=+x)return
-  return{ s:x,e:y}
+const useDayjs=(()=>{
+ let p
+ return()=>p||(p=(async()=>{
+  const [{default:d},{default:u}]=await Promise.all([
+   import('https://cdn.jsdelivr.net/npm/dayjs@1/esm/index.js'),
+   import('https://cdn.jsdelivr.net/npm/dayjs@1/esm/plugin/utc/index.js')
+  ])
+  d.extend(u)
+  return d
+ })())
+})()
+
+async function findAvailableSlots(c1=[],c2=[],cfg={}){
+ const d=await useDayjs()
+ const {durationMinutes:dur,searchRange:r={},workHours:w={}}=cfg
+ const {start:rs,end:re}=r
+ const {start:ws,end:we}=w
+ if(!dur||dur<=0||!rs||!re||!ws||!we)return []
+ const s=d.utc(rs),e=d.utc(re)
+ if(!s.isValid()||!e.isValid()||e.valueOf()<=s.valueOf())return []
+ const rangeStart=s.valueOf(),rangeEnd=e.valueOf(),min=60000
+ const clip=v=>{
+  if(!v||!v.start||!v.end)return 0
+  const a=d.utc(v.start),b=d.utc(v.end)
+  if(!a.isValid()||!b.isValid())return 0
+  const st=Math.max(rangeStart,a.valueOf()),en=Math.min(rangeEnd,b.valueOf())
+  return en>st?{start:st,end:en}:0
  }
+ const busy=[...c1,...c2].map(clip).filter(Boolean).sort((x,y)=>x.start-y.start)
  const merged=[]
- ;[...a,...b].map(clamp).filter(Boolean).sort((x,y)=>+x.s-+y.s).forEach(v=>{
-  const last=merged.at(-1)
-  if(!last||+v.s>+last.e)merged.push({s:v.s,e:v.e})
-  else if(+v.e>+last.e)last.e=v.e
- })
- const gaps=[]
- let cur=r[0]
- merged.forEach(v=>{
-  if(+v.s>+cur)gaps.push({s:cur,e:v.s})
-  if(+v.e>+cur)cur=v.e
- })
- if(+cur<+r[1])gaps.push({s:cur,e:r[1]})
- const slots=[]
- const step={minutes:d}
- gaps.forEach(g=>{
-  for(let day=g.s.startOf('day');+day<+g.e;day=day.plus({days:1})){
-   const ws=day.set({hour:sh,minute:sm,second:0,millisecond:0})
-   const we=day.set({hour:eh,minute:em,second:0,millisecond:0})
-   let u=+ws>+g.s?ws:g.s
-   const limit=+we<+g.e?we:g.e
-   if(+limit<=+u)continue
-   for(;+u.plus(step)<=+limit;u=u.plus(step))slots.push({start:u.toISO(),end:u.plus(step).toISO()})
+ for(const slot of busy){
+  const last=merged[merged.length-1]
+  if(!last||slot.start>last.end)merged.push({...slot})
+  else if(slot.end>last.end)last.end=slot.end
+ }
+ const free=[]
+ let cur=rangeStart
+ for(const slot of merged){
+  if(slot.start>cur)free.push({start:cur,end:slot.start})
+  cur=Math.max(cur,slot.end)
+ }
+ if(cur<rangeEnd)free.push({start:cur,end:rangeEnd})
+ const minutes=t=>{const [h,m]=t.split(':').map(Number);return h*60+m}
+ const workStart=minutes(ws),workEnd=minutes(we)
+ if(workStart>=workEnd)return []
+ const out=[]
+ for(const span of free){
+  let day=d.utc(span.start).startOf('day')
+  while(day.valueOf()<span.end){
+   const dayStart=day.add(workStart,'minute'),dayEnd=day.add(workEnd,'minute')
+   const winStart=Math.max(dayStart.valueOf(),span.start),winEnd=Math.min(dayEnd.valueOf(),span.end)
+   if(winEnd-winStart>=dur*min){
+    let slotStart=d.utc(winStart)
+    while(true){
+     const slotEnd=slotStart.add(dur,'minute')
+     if(slotEnd.valueOf()>winEnd)break
+     out.push({start:slotStart.toISOString(),end:slotEnd.toISOString()})
+     slotStart=slotEnd
+    }
+   }
+   day=day.add(1,'day')
   }
- })
- return slots
+ }
+ return out
 }
 export default findAvailableSlots;

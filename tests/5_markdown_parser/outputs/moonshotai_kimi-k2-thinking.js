@@ -1,13 +1,15 @@
 async function parseMarkdown(md) {
-  const u = 'https://cdn.jsdelivr.net/npm/marked@9/lib/marked.esm.js';
-  const o = {gfm:true,breaks:true,headerIds:false,mangle:false};
-  
+  if (!md?.trim()) return '';
   try {
-    const {marked} = await import(u);
-    marked.setOptions(o);
-    return marked.parse(md);
-  } catch(e) {
-    return `<p>${e.message}</p>`;
+    const [{ marked }, { default: DOMPurify }] = await Promise.all([
+      import('https://esm.sh/marked@9'),
+      import('https://esm.sh/dompurify@3')
+    ]);
+    marked.setOptions({ gfm: true, breaks: true });
+    return DOMPurify.sanitize(marked.parse(md));
+  } catch (e) {
+    console.error('Markdown parse error:', e);
+    return '';
   }
 }
 export default parseMarkdown;

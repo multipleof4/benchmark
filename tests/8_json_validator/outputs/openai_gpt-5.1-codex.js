@@ -1,9 +1,2 @@
-const fetchAjv=(()=>{let p;return()=>p??=import('https://cdn.jsdelivr.net/npm/ajv@8/dist/ajv.min.js?module').then(({default:A})=>new A({allErrors:true,strict:false}));})();
-
-async function validateJSON(data,schema){
-  const ajv=await fetchAjv();
-  const validate=ajv.compile(schema);
-  const valid=validate(data);
-  return {valid,errors:valid?[]:validate.errors.map(e=>e.message||'Invalid')};
-}
+const validateJSON=(()=>{let a;return async(j,s)=>{a??=(async()=>{const{default:Ajv}=await import('https://esm.run/ajv@8');return new Ajv({allErrors:1});})();const v=await a,c=v.compile(s),valid=c(j);return{valid,errors:valid?[]:(c.errors||[]).map(e=>`${e.instancePath||'/'} ${e.message}`)}}})();
 export default validateJSON;

@@ -1,2 +1,2 @@
-async function findLISLength(arr){const{bisectLeft}=await import('https://cdn.skypack.dev/d3-array');let tails=[];for(const num of arr){const i=bisectLeft(tails,num);i===tails.length?tails.push(num):tails[i]=num;}return tails.length;}
+async function findLISLength(a){const{bisectLeft}=await import('https://cdn.skypack.dev/d3-array');let t=[];for(let n of a){let i=bisectLeft(t,n);i===t.length?t.push(n):t[i]=n}return t.length}
 export default findLISLength;

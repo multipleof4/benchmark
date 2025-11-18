@@ -1,19 +1,18 @@
-const findConvexHull = async (pts) => {
-  const { sortBy, uniqBy } = await import('https://esm.sh/lodash-es@4');
-  const cross = (a, b, c) => (b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
-  const sorted = sortBy(uniqBy(pts, p => `${p.x},${p.y}`), ['x', 'y']);
-  if (sorted.length < 3) return sorted;
+async function findConvexHull(pts) {
+  if (!Array.isArray(pts)) return [];
+  const { default: _ } = await import('https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js');
+  const points = _.sortBy(_.uniqWith(pts, (a, b) => a.x === b.x && a.y === b.y), ['x', 'y']);
+  if (points.length < 3) return points;
+  const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+  const build = (h, p) => {
+    while (h.length >= 2 && cross(h[h.length - 2], h[h.length - 1], p) <= 0) h.pop();
+    h.push(p);
+  };
   const lower = [], upper = [];
-  for (const p of sorted) {
-    while (lower.length > 1 && cross(lower[lower.length-2], lower[lower.length-1], p) <= 0) lower.pop();
-    lower.push(p);
-  }
-  for (let i = sorted.length - 1; i >= 0; i--) {
-    const p = sorted[i];
-    while (upper.length > 1 && cross(upper[upper.length-2], upper[upper.length-1], p) <= 0) upper.pop();
-    upper.push(p);
-  }
-  lower.pop(); upper.pop();
-  return [...lower, ...upper];
-};
+  for (const p of points) build(lower, p);
+  for (let i = points.length; i--; ) build(upper, points[i]);
+  lower.pop();
+  upper.pop();
+  return lower.concat(upper);
+}
 export default findConvexHull;

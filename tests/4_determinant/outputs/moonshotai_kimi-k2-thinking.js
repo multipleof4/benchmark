@@ -1,13 +1,11 @@
-const URL = 'https://cdn.jsdelivr.net/npm/mathjs@11.11.0/+esm';
-let det;
+let mathLib;
 
 async function calculateDeterminant(m) {
-  const v = Array.isArray(m) && m.length && m.every(r => Array.isArray(r) && r.length === m.length);
-  if (!v) throw new TypeError('Invalid matrix');
+  if (!Array.isArray(m) || !m.length || m.some(r => !Array.isArray(r) || r.length !== m.length)) {
+    throw new TypeError('Invalid square matrix');
+  }
   
-  det ||= await import(URL).then(m => m.det).catch(() => { throw new Error('Load failed'); });
-  
-  try { return det(m); }
-  catch { throw new Error('Calc failed'); }
+  const {det} = await (mathLib ||= import('https://cdn.jsdelivr.net/npm/mathjs@11.11.0/lib/browser/math.js'));
+  return det(m);
 }
 export default calculateDeterminant;

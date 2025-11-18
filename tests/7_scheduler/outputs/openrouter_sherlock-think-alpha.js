@@ -1,69 +1,55 @@
-async function findAvailableSlots(cal1, cal2, cons) {
-  const { DateTime: DT, Interval: IV, Duration: D } = await import('https://esm.sh/luxon@3.4.4');
-  const dur = D.fromObject({ minutes: cons.durationMinutes });
-  const sr = IV.fromISO(`${cons.searchRange.start}/${cons.searchRange.end}`);
-  const [h1, m1] = cons.workHours.start.split(':').map(Number);
-  const [h2, m2] = cons.workHours.end.split(':').map(Number);
-  let busies = [...cal1, ...cal2].map(e => IV.fromISO(`${e.start}/${e.end}`))
-    .filter(iv => iv?.overlaps(sr))
-    .map(iv => iv.intersection(sr))
-    .filter(iv => iv && !iv.isEmpty)
-    .sort((a, b) => a.start.toMillis() - b.start.toMillis());
-  let merged = [];
-  for (let iv of busies) {
-    if (!merged.length) {
+async function findAvailableSlots(cal1, cal2, {durationMinutes:dm, searchRange, workHours}) {
+  const {DateTime:DT, Interval, Duration} = await import('https://cdn.skypack.dev/luxon');
+  const dur=Duration.fromObject({minutes:dm});
+  const srS=DT.fromISO(searchRange.start).toUTC();
+  const srE=DT.fromISO(searchRange.end).toUTC();
+  const srI=Interval.fromDateTimes(srS,srE);
+  let busies=[...cal1,...cal2].map(s=>{
+    const a=DT.fromISO(s.start).toUTC(),b=DT.fromISO(s.end).toUTC();
+    return a<b?Interval.fromDateTimes(a,b).intersection(srI):null;
+  }).filter(Boolean);
+  const [ws,we]=[workHours.start,workHours.end];
+  const hms=+ws.slice(0,2),mms=+ws.slice(3,5),hme=+we.slice(0,2),mme=+we.slice(3,5);
+  let cur=srS.startOf('day');
+  while(cur<srE){
+    const dayE=cur.plus({days:1});
+    const dayI=Interval.fromDateTimes(cur,dayE).intersection(srI);
+    if(dayI.isEmpty) {cur=cur.plus({days:1});continue;}
+    const wsT=cur.set({hour:hms,minute:mms,second:0,millisecond:0});
+    const weT=cur.set({hour:hme,minute:mme,second:0,millisecond:0});
+    const workI=Interval.fromDateTimes(wsT,weT).intersection(dayI);
+    if(!workI?.isValid||workI.isEmpty){
+      busies.push(dayI);
+    }else{
+      if(dayI.start<workI.start)busies.push(Interval.fromDateTimes(dayI.start,workI.start));
+      if(workI.end<dayI.end)busies.push(Interval.fromDateTimes(workI.end,dayI.end));
+    }
+    cur=cur.plus({days:1});
+  }
+  busies.sort((a,b)=>a.start.toMillis()-b.start.toMillis());
+  const merged=[];
+  for(let iv of busies){
+    if(!iv?.isValid||iv.isEmpty)continue;
+    if(merged.length===0||merged.at(-1).end<iv.start){
       merged.push(iv);
-      continue;
-    }
-    let last = merged[merged.length - 1];
-    if (last.end >= iv.start) {
-      const newEnd = last.end.toMillis() > iv.end.toMillis() ? last.end : iv.end;
-      merged[merged.length - 1] = IV.fromDateTimes(last.start, newEnd);
-    } else {
-      merged.push(iv);
+    }else{
+      const last=merged[merged.length-1];
+      merged[merged.length-1]=Interval.fromDateTimes(last.start,iv.end>last.end?iv.end:last.end);
     }
   }
-  let frees = [];
-  let prevEnd = sr.start;
-  for (let busy of merged) {
-    if (prevEnd < busy.start) {
-      frees.push(IV.fromDateTimes(prevEnd, busy.start));
-    }
-    prevEnd = busy.end;
+  const frees=[];
+  let prev=srS;
+  for(let b of merged){
+    if(prev<b.start)frees.push(Interval.fromDateTimes(prev,b.start));
+    prev=b.end>prev?b.end:prev;
   }
-  if (prevEnd < sr.end) {
-    frees.push(IV.fromDateTimes(prevEnd, sr.end));
-  }
-  let workFrees = [];
-  for (let free of frees) {
-    let cur = free.start;
-    while (cur < free.end) {
-      let dayS = cur.startOf('day');
-      let dayE = dayS.plus({ days: 1 });
-      let dInt = IV.fromDateTimes(dayS, dayE);
-      let dayFree = free.intersection(dInt);
-      if (dayFree && !dayFree.isEmpty) {
-        let wS = dayS.plus({ hours: h1, minutes: m1 });
-        let wE = dayS.plus({ hours: h2, minutes: m2 });
-        let wInt = IV.fromDateTimes(wS, wE);
-        let wf = dayFree.intersection(wInt);
-        if (wf && !wf.isEmpty) {
-          workFrees.push(wf);
-        }
-      }
-      cur = dayE;
-    }
-  }
-  let slots = [];
-  const dMs = dur.toMillis();
-  for (let wf of workFrees) {
-    let remMs = wf.end.toMillis() - wf.start.toMillis();
-    let n = Math.floor(remMs / dMs);
-    let fs = wf.start;
-    for (let i = 0; i < n; i++) {
-      let ss = fs.plus(D.fromMillis(i * dMs));
-      let se = ss.plus(dur);
-      slots.push({ start: ss.toISO(), end: se.toISO() });
+  if(prev<srE)frees.push(Interval.fromDateTimes(prev,srE));
+  const slots=[];
+  for(let f of frees){
+    let c=f.start;
+    while(c.plus(dur)<=f.end){
+      slots.push({start:c.toISO(),end:c.plus(dur).toISO()});
+      c=c.plus(dur);
     }
   }
   return slots;

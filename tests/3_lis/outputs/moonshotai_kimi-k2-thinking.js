@@ -1,12 +1,14 @@
-export const findLISLength = async (arr) => {
-  if (!Array.isArray(arr) || !arr.length) return 0;
-  try {
-    const { bisectLeft } = await import('https://cdn.skypack.dev/d3-array@3');
-    const t = [];
-    for (const v of arr) t[bisectLeft(t, v)] = v;
-    return t.length;
-  } catch {
-    return 0;
+export async function findLISLength(nums) {
+  if (!Array.isArray(nums) || nums.length === 0) return 0;
+  
+  const { bisectLeft } = await import('https://cdn.jsdelivr.net/npm/d3-array@3/+esm');
+  const tails = [];
+  
+  for (const num of nums) {
+    const idx = bisectLeft(tails, num);
+    idx === tails.length ? tails.push(num) : tails[idx] = num;
   }
-};
+  
+  return tails.length;
+}
 export default findLISLength;

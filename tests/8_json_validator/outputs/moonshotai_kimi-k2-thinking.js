@@ -1,25 +1,12 @@
-const validateJSON = async (data, schema) => {
-  try {
-    const { default: Ajv } = await import('https://esm.sh/ajv@8.12.0');
-    const ajv = new Ajv({ allErrors: true, strict: false });
-    try {
-      const { default: addFormats } = await import('https://esm.sh/ajv-formats@2.1.1');
-      addFormats(ajv);
-    } catch {}
-    
-    const validate = ajv.compile(schema);
-    const valid = validate(data);
-    
-    return {
-      valid,
-      errors: valid ? [] : validate.errors.map(e => {
-        const path = (e.instancePath || 'root') + (e.keyword === 'required' ? `.${e.params.missingProperty}` : '');
-        const pattern = e.params?.pattern ? ` (${e.params.pattern})` : '';
-        return `${path} ${e.message}${pattern}`.trim();
-      })
-    };
-  } catch (e) {
-    return { valid: false, errors: [`Validator error: ${e.message}`] };
-  }
-};
+let Ajv;
+async function validateJSON(json, schema) {
+  if(!(json&&typeof json==='object')||!(schema===true||schema===false||(schema&&typeof schema==='object')))
+    return{valid:false,errors:['Invalid input']};
+  try{
+    if(!Ajv){const m=await import('https://esm.sh/ajv@8');Ajv=m.default}
+    const ajv=new Ajv({allErrors:true}),v=ajv.compile(schema);
+    const valid=v(json);
+    return{valid,errors:valid?[]:v.errors.map(e=>`${e.instancePath||'root'} ${e.message}`)};
+  }catch(e){return{valid:false,errors:[e.message]}}
+}
 export default validateJSON;

@@ -1,16 +1,24 @@
-const validateJSON = async (data, schema) => {
-  const { default: Ajv } = await import('https://esm.sh/ajv@8');
+const validateJSON = async (json, schema) => {
+  let ajv;
 
-  const ajv = new Ajv({ allErrors: true });
-  const validate = ajv.compile(schema);
-  const valid = validate(data);
+  try {
+    const { default: Ajv } = await import('https://cdn.jsdelivr.net/npm/ajv@8.17.1/+esm');
+    ajv = new Ajv({ allErrors: true });
+  } catch (e) {
+    return { valid: false, errors: ["Failed to load validator: " + e.message] };
+  }
 
-  const errors = valid
-    ? []
-    : validate.errors.map(
-        ({ instancePath, message }) => `${instancePath || 'object'} ${message}`.trim()
-      );
+  try {
+    const validate = ajv.compile(schema);
+    const valid = validate(json);
 
-  return { valid, errors };
+    const errors = validate.errors?.map(
+      e => `${e.instancePath || 'root'} ${e.message}`.trim()
+    ) ?? [];
+
+    return { valid, errors };
+  } catch (e) {
+    return { valid: false, errors: ["Invalid schema: " + e.message] };
+  }
 };
 export default validateJSON;

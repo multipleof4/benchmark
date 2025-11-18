@@ -1,5 +1,5 @@
 const hashPassword = async (password, salt) => {
-  const { default: scrypt } = await import('https://cdn.jsdelivr.net/npm/scrypt-js@3.0.1/scrypt.min.js');
+  const { scrypt } = await import('https://esm.sh/scrypt-js@3.0.1');
 
   const encoder = new TextEncoder();
 
@@ -13,7 +13,7 @@ const hashPassword = async (password, salt) => {
   );
 
   return [...hashBytes]
-    .map(byte => byte.toString(16).padStart(2, '0'))
+    .map(b => b.toString(16).padStart(2, '0'))
     .join('');
 };
 export default hashPassword;

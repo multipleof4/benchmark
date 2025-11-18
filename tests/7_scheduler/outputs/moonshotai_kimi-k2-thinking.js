@@ -1,59 +1,11 @@
-async function findAvailableSlots(cal1, cal2, constraints) {
-  const { parseISO, addMinutes, set, max, min, startOfDay } = await import('https://cdn.skypack.dev/date-fns');
-  
-  const { durationMinutes, searchRange, workHours } = constraints;
-  const toDate = d => parseISO(d);
-  const [whStart, whEnd] = [workHours.start, workHours.end].map(t => t.split(':').map(Number));
-  const durMs = durationMinutes * 60000;
-  const rng = { s: toDate(searchRange.start), e: toDate(searchRange.end) };
-  
-  const merged = [...cal1, ...cal2]
-    .map(({ start, end }) => ({ s: toDate(start), e: toDate(end) }))
-    .sort((a, b) => a.s - b.s)
-    .reduce((acc, slot) => {
-      const last = acc.at(-1);
-      if (!last || slot.s > last.e) acc.push({ ...slot });
-      else last.e = max([last.e, slot.e]);
-      return acc;
-    }, []);
-  
-  const gaps = [];
-  let cur = rng.s;
-  for (let i = 0; i <= merged.length; i++) {
-    const slot = merged[i];
-    const end = slot ? slot.s : rng.e;
-    if (end > cur && cur < rng.e) gaps.push({ s: cur, e: end });
-    cur = slot && cur < slot.e ? slot.e : cur;
-    if (cur >= rng.e) break;
-  }
-  
-  const slots = [];
-  for (const { s, e } of gaps) {
-    let day = startOfDay(s);
-    const lastDay = startOfDay(e);
-    
-    while (day <= lastDay) {
-      const ws = set(day, { hours: whStart[0], minutes: whStart[1], seconds: 0, milliseconds: 0 });
-      const we = set(day, { hours: whEnd[0], minutes: whEnd[1], seconds: 0, milliseconds: 0 });
-      
-      if (ws < we) {
-        const effS = max([ws, s]);
-        const effE = min([we, e]);
-        
-        if (effS < effE) {
-          let slotS = effS;
-          while (slotS.getTime() + durMs <= effE.getTime()) {
-            const slotE = addMinutes(slotS, durationMinutes);
-            slots.push({ start: slotS.toISOString(), end: slotE.toISOString() });
-            slotS = slotE;
-          }
-        }
-      }
-      
-      day = addMinutes(day, 1440);
-    }
-  }
-  
-  return slots;
+async function findAvailableSlots(a,b,{durationMinutes:d,searchRange:r,workHours:w}){
+const{parseISO:p,formatISO:f,addMinutes:m,min:n,max:x,startOfDay:s}=await import('https://esm.sh/date-fns');
+const busy=[...a,...b].map(({start:S,end:E})=>({s:p(S),e:p(E)})).sort((q,y)=>q.s-y.s).reduce((c,{s:S,e:E})=>{
+const l=c[c.length-1];if(!l||S>l.e)c.push({s:S,e:E});else l.e=x([l.e,E]);return c;
+},[]);
+const rs=p(r.start),re=p(r.end),[ws,we]=[w.start,w.end].map(t=>{const[h,m]=t.split(':').map(Number);return h*60+m;});
+const free=[];let cur=rs;for(const{s:S,e:E}of busy){S>cur&&free.push({s:cur,e:n([S,re])});cur=x([cur,E]);if(cur>=re)break;}
+cur<re&&free.push({s:cur,e:re});const slots=[];for(const{s:fs,e:fe}of free){let st=fs;while(m(st,d)<=fe){const en=m(st,d);const minutes=(st-s(st))/6e4;if(minutes>=ws&&minutes+d<=we)slots.push({start:f(st),end:f(en)});st=en;}}
+return slots;
 }
 export default findAvailableSlots;
