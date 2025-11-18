@@ -20,17 +20,17 @@ openrouter/sherlock-think-alpha
 The following will be available on lynchmark.com/gemini
 
 <!-- GEMINI_START -->
-google/gemini-3-pro-preview TEMP:1.1
-google/gemini-3-pro-preview TEMP:1
-google/gemini-3-pro-preview TEMP:0.9
-google/gemini-3-pro-preview TEMP:0.8
-google/gemini-3-pro-preview TEMP:0.7
-google/gemini-3-pro-preview TEMP:0.6
-google/gemini-3-pro-preview TEMP:0.5
-google/gemini-3-pro-preview TEMP:0.4
-google/gemini-3-pro-preview TEMP:0.3
-google/gemini-3-pro-preview TEMP:0.2
-google/gemini-3-pro-preview TEMP:0.1
-google/gemini-3-pro-preview TEMP:0
+gemini-3-pro-preview TEMP:1.1
+gemini-3-pro-preview TEMP:1
+gemini-3-pro-preview TEMP:0.9
+gemini-3-pro-preview TEMP:0.8
+gemini-3-pro-preview TEMP:0.7
+gemini-3-pro-preview TEMP:0.6
+gemini-3-pro-preview TEMP:0.5
+gemini-3-pro-preview TEMP:0.4
+gemini-3-pro-preview TEMP:0.3
+gemini-3-pro-preview TEMP:0.2
+gemini-3-pro-preview TEMP:0.1
+gemini-3-pro-preview TEMP:0
 <!-- MODELS_END -->
 
