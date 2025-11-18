@@ -78,11 +78,25 @@
       }
       if(stats.length){
         const max=Math.max(...stats.map(x=>x.r));
-        const best=stats.filter(x=>x.r===max);
-        const optimal=(best.reduce((a,c)=>a+c.t,0)/best.length).toFixed(2);
+        const best=stats.filter(x=>x.r===max).sort((a,b)=>a.t-b.t);
+        const l=best.length;
+        const med=((best[(l-1)>>1].t+best[l>>1].t)/2).toFixed(2);
+        const avg=(best.reduce((a,c)=>a+c.t,0)/l).toFixed(2);
+        
         const statDiv=document.createElement('div');
         statDiv.className='mt-8 p-6 bg-white rounded-2xl border border-gray-200 shadow-sm text-center';
-        statDiv.innerHTML=`<h3 class="text-gray-500 font-medium text-sm uppercase tracking-wider mb-2">Optimal Temperature</h3><div class="text-3xl font-bold text-gray-900">${optimal}</div><div class="text-xs text-gray-400 mt-2">Avg of Peak Performance (${(max*100).toFixed(0)}%)</div>`;
+        statDiv.innerHTML=`
+          <h3 class="text-gray-500 font-medium text-sm uppercase tracking-wider mb-4">Optimal Temperature (Peak ${(max*100).toFixed(0)}%)</h3>
+          <div class="grid grid-cols-2 gap-4 divide-x divide-gray-200">
+            <div>
+              <div class="text-3xl font-bold text-gray-900">${med}</div>
+              <div class="text-xs text-gray-400 mt-1">Median</div>
+            </div>
+            <div>
+              <div class="text-3xl font-bold text-gray-900">${avg}</div>
+              <div class="text-xs text-gray-400 mt-1">Average</div>
+            </div>
+          </div>`;
         container.appendChild(statDiv);
       }
     })();
