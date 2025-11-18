@@ -30,7 +30,7 @@
       const genTimes=await fetch('./results.json').then(r=>r.json());
       const models=readme.match(/<!-- GEMINI_START -->\n([\s\S]+?)\n<!-- MODELS_END -->/)[1].trim().split('\n').filter(Boolean);
       const tests=[...new Set(Object.values(genTimes).flatMap(Object.keys))].sort();
-      let [wSum, wTot] = [0, 0];
+      const stats=[];
       
       for(const model of models){
         const sModel=model.replace(/[\/:]/g,'_');
@@ -69,18 +69,20 @@
           li.innerHTML=`${status} <span class="font-medium text-gray-800">${test}</span><span class="mono text-gray-500 ml-auto">${time.toFixed(3)}s</span>`;
         }
         const ratio=tests.length?passed/tests.length:0;
-        if(!isNaN(tVal)){wSum+=tVal*ratio;wTot+=ratio;}
+        if(!isNaN(tVal))stats.push({t:tVal,r:ratio});
         const grade=gradeOf(ratio);
         const scoreLi=document.createElement('li');
         scoreLi.className='mt-3 pt-3 border-t border-gray-200 flex items-center text-sm justify-between';
         scoreLi.innerHTML=`<span class="text-gray-600">Score</span><span class="flex items-center gap-3"><span class="mono text-gray-900 font-semibold">${passed}/${tests.length}</span><span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800">${grade}</span></span>`;
         list.appendChild(scoreLi);
       }
-      if(wTot>0){
-        const optimal=(wSum/wTot).toFixed(4);
+      if(stats.length){
+        const max=Math.max(...stats.map(x=>x.r));
+        const best=stats.filter(x=>x.r===max);
+        const optimal=(best.reduce((a,c)=>a+c.t,0)/best.length).toFixed(2);
         const statDiv=document.createElement('div');
         statDiv.className='mt-8 p-6 bg-white rounded-2xl border border-gray-200 shadow-sm text-center';
-        statDiv.innerHTML=`<h3 class="text-gray-500 font-medium text-sm uppercase tracking-wider mb-2">Optimal Temperature</h3><div class="text-3xl font-bold text-gray-900">${optimal}</div><div class="text-xs text-gray-400 mt-2">Weighted Center of Correctness</div>`;
+        statDiv.innerHTML=`<h3 class="text-gray-500 font-medium text-sm uppercase tracking-wider mb-2">Optimal Temperature</h3><div class="text-3xl font-bold text-gray-900">${optimal}</div><div class="text-xs text-gray-400 mt-2">Avg of Peak Performance (${(max*100).toFixed(0)}%)</div>`;
         container.appendChild(statDiv);
       }
     })();
