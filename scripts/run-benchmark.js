@@ -8,6 +8,7 @@ const CWD = process.cwd();
 const [README, TESTS, RESULTS] = ['README', 'tests', 'results.json'].map(f => path.join(CWD, f));
 const getArg = n => { const i = process.argv.indexOf(n); return i > -1 ? process.argv[i + 1] : null; };
 const isGemini = process.argv.includes('--gemini');
+const OUT_DIR_NAME = isGemini ? 'outputs_gemini' : 'outputs';
 
 const apiCall = async (prompt, model, temp) => {
   if (isGemini) {
@@ -48,7 +49,7 @@ const main = async () => {
   const testDirs = (await fs.readdir(TESTS, { withFileTypes: true })).filter(d => d.isDirectory()).map(d => d.name).sort();
   const targetTests = testDirs.slice(0, Math.ceil(testDirs.length * (pct / 100)));
 
-  const clean = dir => fs.rm(path.join(TESTS, dir, 'outputs', sModel ? `${sModel.replace(/[\/:]/g, '_')}.js` : ''), { recursive: !sModel, force: true });
+  const clean = dir => fs.rm(path.join(TESTS, dir, OUT_DIR_NAME, sModel ? `${sModel.replace(/[\/:]/g, '_')}.js` : ''), { recursive: !sModel, force: true });
   await Promise.all(testDirs.map(clean));
 
   let data = {};
@@ -61,13 +62,13 @@ const main = async () => {
     
     for (const dir of targetTests) {
       const { prompt, functionName } = (await import(pathToFileURL(path.join(TESTS, dir, 'test.js')))).default;
-      console.log(`Gen ${dir} for ${mSpec}...`);
+      console.log(`Gen ${dir} for ${mSpec} in ${OUT_DIR_NAME}...`);
       const res = await getLlmCode(`${shared}\n\n${prompt.trim()}`, model, functionName, temp);
       
       data[mSpec][dir] = res?.duration ?? null;
       if (!res) continue;
 
-      const outDir = path.join(TESTS, dir, 'outputs');
+      const outDir = path.join(TESTS, dir, OUT_DIR_NAME);
       await fs.mkdir(outDir, { recursive: true });
       await fs.writeFile(path.join(outDir, `${mSpec.replace(/[\/:]/g, '_')}.js`), res.code);
     }
