@@ -9,14 +9,14 @@
   <meta name="description" content="Lynchmark tests LLMs by requiring correct CDN imports and library-specific implementations to solve challenging browser-based JavaScript tasks.">
   <meta property="og:description" content="Lynchmark tests LLMs by requiring correct CDN imports and library-specific implementations to solve challenging browser-based JavaScript tasks.">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://lynchmark.pages.dev/">
-  <link rel="canonical" href="https://lynchmark.pages.dev/">
+  <meta property="og:url" content="https://lynchmark.com/">
+  <link rel="canonical" href="https://lynchmark.com/">
   <script type="application/ld+json">
   {
     "@context":"https://schema.org",
     "@type":"WebSite",
     "name":"Lynchmark",
-    "url":"https://lynchmark.pages.dev/",
+    "url":"https://lynchmark.com/",
     "description":"Lynchmark – an automated benchmark for LLM coding abilities in a real browser+CDN environment."
   }
   </script>
@@ -44,6 +44,22 @@
 
     <div id="results-container" class="flex flex-col gap-6 flex-grow">
     </div>
+
+    <section class="mt-16 border-t border-gray-200 pt-10">
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">Analysis & Insights</h2>
+      <div class="grid gap-6">
+        <a href="/blog/gemini-optimal-temperature.html" class="group block bg-white rounded-xl border border-gray-200 p-5 hover:border-blue-400 transition shadow-sm hover:shadow-md">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-blue-600 uppercase tracking-wide">Research Finding</span>
+            <span class="text-xs text-gray-400 mono">May 22, 2024</span>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition mb-2">Optimal Temperature for Gemini 3 Pro Coding</h3>
+          <p class="text-sm text-gray-600 leading-relaxed">
+            We ran 231 automated coding benchmarks across the temperature spectrum. The data reveals that <strong>0.35</strong> is the statistical sweet spot for accuracy, challenging default settings.
+          </p>
+        </a>
+      </div>
+    </section>
 
     <footer class="mt-10 flex justify-center">
       <a
@@ -139,3 +155,4 @@
   </script>
 </body>
 </html>
+
