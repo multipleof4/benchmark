@@ -105,7 +105,7 @@
           li.className='flex items-center gap-3 text-sm';
           list.appendChild(li);
           const time=genTimes[model]?.[test];
-          if(time===null){
+          if(time==null){
             li.innerHTML=`— <span class="font-medium text-gray-800">${test}</span><span class="mono text-gray-500 ml-auto">N/A</span>`;
             continue;
           }
@@ -143,4 +143,3 @@
   </script>
 </body>
 </html>
-
