@@ -362,5 +362,18 @@
     "7_scheduler": 79.87219575399999,
     "8_json_validator": 28.535885181999998,
     "9_stream_visualizer": 21.60573508199997
+  },
+  "x-ai/grok-4.1-fast": {
+    "10_scrypt_hash": 7.757944809,
+    "11_geospatial": 53.446182177,
+    "1_dijkstra": 27.758440794000002,
+    "2_convex_hull": 36.94094523,
+    "3_lis": 21.781018421000002,
+    "4_determinant": 6.4344023279999965,
+    "5_markdown_parser": 14.127124740999978,
+    "6_csv_processor": 56.944877974,
+    "7_scheduler": 48.61515529499997,
+    "8_json_validator": 36.715725561,
+    "9_stream_visualizer": 20.464613763000003
   }
 }
