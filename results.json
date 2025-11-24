@@ -375,5 +375,18 @@
     "7_scheduler": 48.61515529499997,
     "8_json_validator": 36.715725561,
     "9_stream_visualizer": 20.464613763000003
+  },
+  "anthropic/claude-opus-4.5 TEMP:0.7": {
+    "10_scrypt_hash": 3.390702887,
+    "11_geospatial": 3.506444718,
+    "1_dijkstra": 5.516664937000001,
+    "2_convex_hull": 5.606021382000001,
+    "3_lis": 2.975131071,
+    "4_determinant": 1.5542161800000032,
+    "5_markdown_parser": 1.6900872840000012,
+    "6_csv_processor": 5.3806070250000015,
+    "7_scheduler": 13.963300305999997,
+    "8_json_validator": 3.6207129579999964,
+    "9_stream_visualizer": 4.672214089000001
   }
 }
