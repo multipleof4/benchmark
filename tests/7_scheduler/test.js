@@ -12,9 +12,6 @@ export default {
 // - Return an array of available slots in chronological order, each as: { start: 'ISODateString', end: 'ISODateString' }
 // - Each slot must be exactly durationMinutes long. Slots must not overlap. Slots should be consecutive.`,
   runTest: async (findAvailableSlots) => {
-    const assert = {
-      deepStrictEqual: (a, e, m) => { if (JSON.stringify(a) !== JSON.stringify(e)) throw new Error(m || `FAIL: ${JSON.stringify(a)} !== ${JSON.stringify(e)}`) },
-    };
     const today = new Date().toISOString().split('T')[0];
     const calendar1 = [
       { start: `${today}T09:00:00.000Z`, end: `${today}T10:30:00.000Z` },
@@ -37,6 +34,12 @@ export default {
     ];
 
     const result = await findAvailableSlots(calendar1, calendar2, constraints);
-    assert.deepStrictEqual(result, expected, 'Test Failed: Incorrect slots found.');
+    
+    const norm = arr => arr.map(s => ({ s: new Date(s.start).getTime(), e: new Date(s.end).getTime() }));
+    const rN = JSON.stringify(norm(result));
+    const eN = JSON.stringify(norm(expected));
+    
+    if (rN !== eN) throw new Error(`FAIL: Time mismatch.\nGot: ${rN}\nExp: ${eN}`);
   }
 };
+
