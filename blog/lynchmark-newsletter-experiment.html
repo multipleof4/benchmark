@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lynchmark Newsletter Experiment</title>
+  <meta name="description" content="Subscribe to the Lynchmark newsletter experiment for LLM benchmark updates.">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @font-face{font-family:"Stain";src:url("https://cdn.jsdelivr.net/gh/multipleof4/stain.otf@master/dist/Stain.otf") format("opentype")}
+    body{font-family:"Stain",sans-serif}
+    .mono{font-family:"IBM Plex Mono",monospace}
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <main class="max-w-xl mx-auto flex flex-col min-h-screen p-6 lg:p-8">
+    <nav class="mb-12 flex items-center gap-4 text-sm">
+      <a href="/" class="text-gray-500 hover:text-blue-600 transition">Lynchmark</a>
+      <span class="text-gray-300">/</span>
+      <span class="font-medium text-gray-900">Newsletter Experiment</span>
+    </nav>
+    <article class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <header class="bg-gray-50 px-8 py-10 border-b border-gray-200 text-center">
+        <div class="inline-flex items-center rounded-full border border-purple-200 bg-purple-50 text-purple-700 text-xs font-bold px-3 py-1 mb-4 uppercase tracking-wide">Experiment</div>
+        <h1 class="text-3xl font-bold text-gray-900 mb-4">Lynchmark Newsletter</h1>
+        <p class="text-lg text-gray-600 max-w-md mx-auto">Get notified when new benchmark results drop. No spam, just data.</p>
+      </header>
+      <div class="p-8">
+        <form id="sub-form" class="space-y-4">
+          <input type="email" id="email" required placeholder="you@example.com" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none mono text-sm">
+          <button type="submit" class="w-full px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition">Subscribe</button>
+        </form>
+        <p id="msg" class="mt-4 text-center text-sm hidden"></p>
+      </div>
+    </article>
+    <footer class="mt-12 text-center text-xs text-gray-500 mono">Public Domain</footer>
+  </main>
+  <script>
+    const form=document.getElementById('sub-form'),msg=document.getElementById('msg');
+    form.onsubmit=async e=>{
+      e.preventDefault();
+      msg.className='mt-4 text-center text-sm text-gray-500';
+      msg.textContent='Subscribing...';
+      msg.classList.remove('hidden');
+      try{
+        const r=await fetch('/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('email').value})});
+        const d=await r.json();
+        if(d.ok){msg.textContent='✓ Subscribed!';msg.className='mt-4 text-center text-sm text-green-600';}
+        else{msg.textContent=d.error||'Error';msg.className='mt-4 text-center text-sm text-red-600';}
+      }catch{msg.textContent='Network error';msg.className='mt-4 text-center text-sm text-red-600';}
+    };
+  </script>
+</body>
+</html>
