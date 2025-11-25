@@ -388,5 +388,18 @@
     "7_scheduler": 13.963300305999997,
     "8_json_validator": 3.6207129579999964,
     "9_stream_visualizer": 4.672214089000001
+  },
+  "openrouter/bert-nebulon-alpha": {
+    "10_scrypt_hash": 8.55691055,
+    "11_geospatial": 7.062121927999999,
+    "1_dijkstra": 11.829055708,
+    "2_convex_hull": 18.499725369,
+    "3_lis": 4.786422595999997,
+    "4_determinant": 8.771500180000002,
+    "5_markdown_parser": 13.436161649,
+    "6_csv_processor": 21.607565694999998,
+    "7_scheduler": 22.426437961999998,
+    "8_json_validator": 12.943359998,
+    "9_stream_visualizer": 12.601481400000004
   }
 }
