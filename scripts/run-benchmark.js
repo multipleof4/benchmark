@@ -31,7 +31,8 @@ const getLlmCode = async (prompt, model, funcName, temp) => {
     const content = await apiCall(prompt, model, temp);
     const duration = (performance.now() - start) / 1000;
     const code = content.match(/```(?:javascript|js)?\n([\s\S]+?)\n```/)?.[1].trim() ?? content.trim();
-    return { code: `${code.replace(/export\s+default\s+.*$/m, '')}\nexport default ${funcName};`, duration };
+    const clean = code.replace(/export\s+default\s+.*$/m, '');
+    return { code: `${clean}\nexport default ${funcName};\n// Generation time: ${duration.toFixed(3)}s`, duration };
   } catch (e) { console.error(`API Error ${model}: ${e.message}`); return null; }
 };
 
@@ -81,7 +82,7 @@ const main = async () => {
       console.log(`Gen ${dir} for ${mSpec} in ${OUT_DIR_NAME}...`);
       const res = await getLlmCode(`${shared}\n\n${prompt.trim()}`, model, functionName, temp);
       
-      data[mSpec][dir] = res?.duration ?? null;
+      data[mSpec][dir] = res ? 1 : null;
       if (!res) continue;
 
       const outDir = path.join(TESTS, dir, OUT_DIR_NAME);
