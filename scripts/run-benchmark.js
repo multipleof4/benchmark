@@ -48,14 +48,22 @@ const main = async () => {
   const models = sModel ? [sModel] : allModels;
 
   const testDirs = (await fs.readdir(TESTS, { withFileTypes: true })).filter(d => d.isDirectory()).map(d => d.name).sort();
-  let targetTests = testDirs;
+  let targetTests = [];
   
-  if (sTest) {
-    targetTests = testDirs.filter(d => d.startsWith(`${sTest}_`));
-    if (!targetTests.length) throw new Error(`Test ${sTest} not found.`);
-  } else {
-    targetTests = testDirs.slice(0, Math.ceil(testDirs.length * (pct / 100)));
+  const candidates = sTest 
+    ? testDirs.filter(d => d.startsWith(`${sTest}_`))
+    : testDirs.slice(0, Math.ceil(testDirs.length * (pct / 100)));
+
+  for (const dir of candidates) {
+    try {
+      await fs.access(path.join(TESTS, dir, 'test.js'));
+      targetTests.push(dir);
+    } catch {
+      if (sTest) console.warn(`Skipping ${dir}: test.js not found`);
+    }
   }
+
+  if (sTest && !targetTests.length) throw new Error(`No valid tests found for "${sTest}"`);
 
   const clean = dir => fs.rm(path.join(TESTS, dir, OUT_DIR_NAME, sModel ? `${sModel.replace(/[\/:]/g, '_')}.js` : ''), { recursive: !sModel, force: true });
   await Promise.all(targetTests.map(clean));
