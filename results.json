@@ -22,7 +22,7 @@
     "7_scheduler": 10.645383548000012,
     "8_json_validator": 3.43886771999998,
     "9_stream_visualizer": 4.354729013999982,
-    "4_transpiler": 8.389267120000005
+    "4_transpiler": 2.492613701999995
   },
   "openai/gpt-5.1-codex": {
     "10_scrypt_hash": 7.498817803999991,
@@ -35,7 +35,7 @@
     "7_scheduler": 79.01968128499995,
     "8_json_validator": 8.087602373000001,
     "9_stream_visualizer": 12.885421481000026,
-    "4_transpiler": 51.812796853999984
+    "4_transpiler": 3.333252582000001
   },
   "moonshotai/kimi-k2-thinking": {
     "10_scrypt_hash": 53.01161044100009,
@@ -48,7 +48,7 @@
     "7_scheduler": 204.68869797400012,
     "8_json_validator": 282.8534934129999,
     "9_stream_visualizer": 445.8482685430001,
-    "4_transpiler": 25.871377203000012
+    "4_transpiler": 281.009873894
   },
   "google/gemini-2.5-pro": {
     "10_scrypt_hash": 33.595784767000005,
@@ -61,7 +61,7 @@
     "7_scheduler": 98.78428086399985,
     "8_json_validator": 17.644947614999953,
     "9_stream_visualizer": 42.817067843999716,
-    "4_transpiler": 79.54909138500004
+    "4_transpiler": 20.659448836000053
   },
   "openrouter/sherlock-think-alpha": {
     "10_scrypt_hash": 14.262482631000225,
@@ -338,7 +338,7 @@
     "7_scheduler": 79.87219575399999,
     "8_json_validator": 28.535885181999998,
     "9_stream_visualizer": 21.60573508199997,
-    "4_transpiler": 51.93870672
+    "4_transpiler": 15.103792848000001
   },
   "x-ai/grok-4.1-fast": {
     "10_scrypt_hash": 7.757944809,
@@ -351,7 +351,7 @@
     "7_scheduler": 48.61515529499997,
     "8_json_validator": 36.715725561,
     "9_stream_visualizer": 20.464613763000003,
-    "4_transpiler": 90.58870585400001
+    "4_transpiler": 15.495995939
   },
   "anthropic/claude-opus-4.5 TEMP:0.7": {
     "10_scrypt_hash": 3.390702887,
@@ -364,7 +364,7 @@
     "7_scheduler": 13.963300305999997,
     "8_json_validator": 3.6207129579999964,
     "9_stream_visualizer": 4.672214089000001,
-    "4_transpiler": 12.686495516999999
+    "4_transpiler": 3.4918008779999994
   },
   "openrouter/bert-nebulon-alpha": {
     "10_scrypt_hash": 8.55691055,
@@ -377,6 +377,6 @@
     "7_scheduler": 22.426437961999998,
     "8_json_validator": 12.943359998,
     "9_stream_visualizer": 12.601481400000004,
-    "4_transpiler": 18.506576999999997
+    "4_transpiler": 3.338363882
   }
 }
