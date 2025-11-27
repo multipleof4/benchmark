@@ -114,7 +114,6 @@
           list.appendChild(li);
           
           const outUrl=`./tests/${test}/outputs/${sModel}.js`;
-          // Check if file exists by trying to fetch head or text
           const srcP=fetch(outUrl).then(r=>{
              if(!r.ok) throw new Error('404');
              return r.text();
@@ -128,19 +127,11 @@
              continue;
           }
           ran++;
-          let status='✅';
-          try{
-            const testP=(async()=>{
-              const tMod=await import(`./tests/${test}/test.js`);
-              const lMod=await import(outUrl);
-              await tMod.default.runTest(lMod.default);
-            })();
-            await Promise.race([testP,new Promise((_,r)=>setTimeout(()=>r(new Error('Timeout')),12000))]);
-          }catch(e){
-            console.error(`${model} - ${test}: `,e);
-            status='❌';
-          }
+          
+          const resMatch=src.match(/\/\/ Result: (PASS|FAIL)/);
+          const status=resMatch?(resMatch[1]==='PASS'?'✅':'❌'):'❓';
           if(status==='✅')passed++;
+          
           const fTime=src.match(/\/\/ Generation time: ([\d\.]+)s/)?.[1];
           const timeStr=fTime?`${parseFloat(fTime).toFixed(3)}s`:'N/A';
           li.innerHTML=`${status} <span class="font-medium text-gray-800">${test}</span><span class="mono text-gray-500 ml-auto">${timeStr}</span>`;
