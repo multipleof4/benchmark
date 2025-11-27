@@ -43,14 +43,22 @@ const main = async () => {
   const shared = readme.match(/SHARED_PROMPT:\s*"([\s\S]+?)"/)?.[1] ?? '';
   
   const sModel = getArg('--model');
+  const sTest = getArg('--test');
   if (sModel && !allModels.includes(sModel)) throw new Error(`Model "${sModel}" not found in README.`);
   const models = sModel ? [sModel] : allModels;
 
   const testDirs = (await fs.readdir(TESTS, { withFileTypes: true })).filter(d => d.isDirectory()).map(d => d.name).sort();
-  const targetTests = testDirs.slice(0, Math.ceil(testDirs.length * (pct / 100)));
+  let targetTests = testDirs;
+  
+  if (sTest) {
+    targetTests = testDirs.filter(d => d.startsWith(`${sTest}_`));
+    if (!targetTests.length) throw new Error(`Test ${sTest} not found.`);
+  } else {
+    targetTests = testDirs.slice(0, Math.ceil(testDirs.length * (pct / 100)));
+  }
 
   const clean = dir => fs.rm(path.join(TESTS, dir, OUT_DIR_NAME, sModel ? `${sModel.replace(/[\/:]/g, '_')}.js` : ''), { recursive: !sModel, force: true });
-  await Promise.all(testDirs.map(clean));
+  await Promise.all(targetTests.map(clean));
 
   let data = {};
   try { data = JSON.parse(await fs.readFile(RESULTS, 'utf-8')); } catch {}
