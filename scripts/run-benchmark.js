@@ -5,7 +5,7 @@ import axios from 'axios';
 import { performance } from 'perf_hooks';
 
 const CWD = process.cwd();
-const [README, TESTS, RESULTS] = ['README', 'tests', 'results.json'].map(f => path.join(CWD, f));
+const [README, TESTS] = ['README', 'tests'].map(f => path.join(CWD, f));
 const getArg = n => { const i = process.argv.indexOf(n); return i > -1 ? process.argv[i + 1] : null; };
 const isGemini = process.argv.includes('--gemini');
 const OUT_DIR_NAME = isGemini ? 'outputs_gemini' : 'outputs';
@@ -69,20 +69,15 @@ const main = async () => {
   const clean = dir => fs.rm(path.join(TESTS, dir, OUT_DIR_NAME, sModel ? `${sModel.replace(/[\/:]/g, '_')}.js` : ''), { recursive: !sModel, force: true });
   await Promise.all(targetTests.map(clean));
 
-  let data = {};
-  try { data = JSON.parse(await fs.readFile(RESULTS, 'utf-8')); } catch {}
-
   for (const mSpec of models) {
     const [model, tStr] = mSpec.split(' TEMP:');
     const temp = tStr ? parseFloat(tStr) : undefined;
-    data[mSpec] ||= {};
     
     for (const dir of targetTests) {
       const { prompt, functionName } = (await import(pathToFileURL(path.join(TESTS, dir, 'test.js')))).default;
       console.log(`Gen ${dir} for ${mSpec} in ${OUT_DIR_NAME}...`);
       const res = await getLlmCode(`${shared}\n\n${prompt.trim()}`, model, functionName, temp);
       
-      data[mSpec][dir] = res ? 1 : null;
       if (!res) continue;
 
       const outDir = path.join(TESTS, dir, OUT_DIR_NAME);
@@ -90,7 +85,6 @@ const main = async () => {
       await fs.writeFile(path.join(outDir, `${mSpec.replace(/[\/:]/g, '_')}.js`), res.code);
     }
   }
-  await fs.writeFile(RESULTS, JSON.stringify(data, null, 2));
   console.log('Done.');
 };
 
