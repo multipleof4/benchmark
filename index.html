@@ -34,7 +34,7 @@
     <header class="text-center mb-10">
       <div class="relative inline-block">
         <h1 class="text-4xl font-bold text-gray-900 mb-2">Lynchmark</h1>
-        <span class="mono pointer-events-none absolute -top-2 -right-3 inline-flex items-center rounded-full border border-green-200 bg-green-50 text-green-700 text-[10px] leading-none font-medium px-1.5 py-0.5 shadow-sm">
+        <span class="mono pointer-events-none absolute -top-2 -right-3 inline-flex items-center rounded-full border border-green-200 bg-green-50 text-green-700 text-xs leading-none font-medium px-2 py-1 shadow-sm">
           Last updated <time id="last-updated" class="ml-1"></time>
         </span>
       </div>
@@ -85,11 +85,15 @@
     updatedEl.dateTime=now.toISOString().split('T')[0];
     const grades=[[.97,'A+'],[.93,'A'],[.9,'A-'],[.87,'B+'],[.83,'B'],[.8,'B-'],[.77,'C+'],[.73,'C'],[.7,'C-'],[.6,'D'],[0,'F']];
     const gradeOf=ratio=>grades.find(([floor])=>ratio>=floor)[1];
+    
     const run=async()=>{
       const readme=await fetch('./README').then(r=>r.text());
-      const genTimes=await fetch('./results.json').then(r=>r.json());
       const models=readme.match(/<!-- MODELS_START -->\n([\s\S]+?)\n<!-- MODELS_END -->/)[1].trim().split('\n');
-      const tests=[...new Set(Object.values(genTimes).flatMap(Object.keys))].sort();
+      
+      const testsRes=await fetch('https://api.github.com/repos/multipleof4/lynchmark/contents/tests');
+      const testsData=await testsRes.json();
+      const tests=testsData.filter(d=>d.type==='dir').map(d=>d.name).sort();
+
       for(const model of models){
         const sModel=model.replace(/[\/:]/g,'_');
         const card=document.createElement('section');
@@ -102,19 +106,29 @@
         container.appendChild(card);
         const list=get(`list-${sModel}`);
         let passed=0;
+        let ran=0;
+        
         for(const test of tests){
           const li=document.createElement('li');
           li.className='flex items-center gap-3 text-sm';
           list.appendChild(li);
-          const entry=genTimes[model]?.[test];
-          if(entry==null){
-            li.innerHTML=`— <span class="font-medium text-gray-800">${test}</span><span class="mono text-gray-500 ml-auto">N/A</span>`;
-            continue;
-          }
-          li.innerHTML=`<svg class="animate-spin h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="font-medium text-gray-800">${test}</span><span class="mono text-gray-500 ml-auto">...</span>`;
-          let status='✅';
+          
           const outUrl=`./tests/${test}/outputs/${sModel}.js`;
-          const srcP=fetch(outUrl).then(r=>r.text()).catch(()=>'');
+          // Check if file exists by trying to fetch head or text
+          const srcP=fetch(outUrl).then(r=>{
+             if(!r.ok) throw new Error('404');
+             return r.text();
+          }).catch(()=>null);
+
+          li.innerHTML=`<svg class="animate-spin h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="font-medium text-gray-800">${test}</span><span class="mono text-gray-500 ml-auto">...</span>`;
+          
+          const src=await srcP;
+          if(src===null){
+             li.innerHTML=`— <span class="font-medium text-gray-800">${test}</span><span class="mono text-gray-500 ml-auto">N/A</span>`;
+             continue;
+          }
+          ran++;
+          let status='✅';
           try{
             const testP=(async()=>{
               const tMod=await import(`./tests/${test}/test.js`);
@@ -127,20 +141,18 @@
             status='❌';
           }
           if(status==='✅')passed++;
-          const src=await srcP;
           const fTime=src.match(/\/\/ Generation time: ([\d\.]+)s/)?.[1];
-          const time=fTime?parseFloat(fTime):(typeof entry==='number'?entry:null);
-          const timeStr=time?.toFixed(3)??'N/A';
-          li.innerHTML=`${status} <span class="font-medium text-gray-800">${test}</span><span class="mono text-gray-500 ml-auto">${timeStr}s</span>`;
+          const timeStr=fTime?`${parseFloat(fTime).toFixed(3)}s`:'N/A';
+          li.innerHTML=`${status} <span class="font-medium text-gray-800">${test}</span><span class="mono text-gray-500 ml-auto">${timeStr}</span>`;
         }
-        const ratio=tests.length?passed/tests.length:0;
+        const ratio=ran?passed/ran:0;
         const li=document.createElement('li');
         li.className='mt-3 pt-3 border-t border-gray-200 flex items-center text-sm justify-between';
         const grade=gradeOf(ratio);
         li.innerHTML=`
           <span class="text-gray-600">Score</span>
           <span class="flex items-center gap-3">
-            <span class="mono text-gray-900 font-semibold">${passed}/${tests.length}</span>
+            <span class="mono text-gray-900 font-semibold">${passed}/${ran}</span>
             <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-800">${grade}</span>
           </span>`;
         list.appendChild(li);
