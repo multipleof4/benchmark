@@ -1,7 +1,8 @@
 const findShortestPath = async (g, s, e) => {
-  const { default: Q } = await import('https://esm.sh/js-priority-queue')
-  const q = new Q({ comparator: (a, b) => a.w - b.w })
+  const { default: PQ } = await import('https://cdn.jsdelivr.net/npm/js-priority-queue@0.1.5/+esm')
+  const q = new PQ({ comparator: (a, b) => a.w - b.w })
   const d = { [s]: 0 }
+  
   q.queue({ n: s, w: 0 })
 
   while (q.length) {
@@ -9,14 +10,17 @@ const findShortestPath = async (g, s, e) => {
     if (n === e) return w
     if (w > (d[n] ?? Infinity)) continue
 
-    for (const v in g[n]) {
-      const k = w + g[n][v]
-      if (k < (d[v] ?? Infinity)) {
-        d[v] = k
-        q.queue({ n: v, w: k })
+    for (const k in g[n] || {}) {
+      const t = w + g[n][k]
+      if (t < (d[k] ?? Infinity)) {
+        d[k] = t
+        q.queue({ n: k, w: t })
       }
     }
   }
+  
   return Infinity
 }
 export default findShortestPath;
+// Generation time: 30.290s
+// Result: PASS

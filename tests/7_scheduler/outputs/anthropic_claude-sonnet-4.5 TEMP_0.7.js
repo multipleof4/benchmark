@@ -1,69 +1,103 @@
 const findAvailableSlots = async (calendar1, calendar2, constraints) => {
-  const { startOfDay, addMinutes, parseISO, formatISO } = await import('https://cdn.jsdelivr.net/npm/date-fns@3.0.0/+esm');
+  const { parseISO, addMinutes, isWithinInterval, isBefore, isAfter, isEqual } = await import('https://cdn.jsdelivr.net/npm/date-fns@3.0.0/+esm');
   
   const { durationMinutes, searchRange, workHours } = constraints;
   const searchStart = parseISO(searchRange.start);
   const searchEnd = parseISO(searchRange.end);
   
-  const [workStartHour, workStartMin] = workHours.start.split(':').map(Number);
-  const [workEndHour, workEndMin] = workHours.end.split(':').map(Number);
-  const workStartMs = (workStartHour * 60 + workStartMin) * 60000;
-  const workEndMs = (workEndHour * 60 + workEndMin) * 60000;
+  const parseTime = (timeStr) => {
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
+  };
+  
+  const workStartMinutes = parseTime(workHours.start);
+  const workEndMinutes = parseTime(workHours.end);
+  
+  const getUTCMinutes = (date) => date.getUTCHours() * 60 + date.getUTCMinutes();
+  
+  const isInWorkHours = (date) => {
+    const minutes = getUTCMinutes(date);
+    return minutes >= workStartMinutes && minutes < workEndMinutes;
+  };
+  
+  const setUTCTime = (date, minutes) => {
+    const d = new Date(date);
+    d.setUTCHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
+    return d;
+  };
   
   const allBusy = [...calendar1, ...calendar2]
-    .map(({ start, end }) => ({ start: parseISO(start), end: parseISO(end) }))
+    .map(slot => ({ start: parseISO(slot.start), end: parseISO(slot.end) }))
     .sort((a, b) => a.start - b.start);
   
   const merged = [];
   for (const slot of allBusy) {
-    if (merged.length && slot.start <= merged[merged.length - 1].end) {
-      merged[merged.length - 1].end = new Date(Math.max(merged[merged.length - 1].end, slot.end));
+    if (merged.length === 0) {
+      merged.push({ ...slot });
     } else {
-      merged.push({ start: slot.start, end: slot.end });
+      const last = merged[merged.length - 1];
+      if (isBefore(slot.start, last.end) || isEqual(slot.start, last.end)) {
+        last.end = isAfter(slot.end, last.end) ? slot.end : last.end;
+      } else {
+        merged.push({ ...slot });
+      }
     }
   }
   
-  const free = [];
-  let current = searchStart;
+  const freePeriods = [];
+  let currentStart = searchStart;
+  
   for (const busy of merged) {
-    if (current < busy.start) {
-      free.push({ start: current, end: busy.start });
+    if (isBefore(currentStart, busy.start)) {
+      freePeriods.push({ start: currentStart, end: busy.start });
     }
-    current = new Date(Math.max(current, busy.end));
+    currentStart = isAfter(busy.end, currentStart) ? busy.end : currentStart;
   }
-  if (current < searchEnd) {
-    free.push({ start: current, end: searchEnd });
+  
+  if (isBefore(currentStart, searchEnd)) {
+    freePeriods.push({ start: currentStart, end: searchEnd });
   }
   
   const slots = [];
-  for (const period of free) {
-    let slotStart = period.start;
+  
+  for (const period of freePeriods) {
+    let current = new Date(period.start);
+    const periodEnd = period.end;
     
-    while (slotStart < period.end) {
-      const dayStart = startOfDay(slotStart);
-      const slotStartMs = slotStart - dayStart;
-      const slotEnd = addMinutes(slotStart, durationMinutes);
-      const slotEndMs = slotEnd - dayStart;
+    while (isBefore(current, periodEnd)) {
+      const currentDay = new Date(Date.UTC(current.getUTCFullYear(), current.getUTCMonth(), current.getUTCDate()));
+      const workStart = setUTCTime(currentDay, workStartMinutes);
+      const workEnd = setUTCTime(currentDay, workEndMinutes);
       
-      if (slotEnd > period.end) break;
+      let slotStart = isAfter(current, workStart) ? current : workStart;
       
-      const endsNextDay = slotEnd - startOfDay(slotEnd) < slotEndMs % 86400000;
-      
-      if (!endsNextDay && 
-          slotStartMs >= workStartMs && 
-          slotEndMs <= workEndMs &&
-          slotStart >= searchStart &&
-          slotEnd <= searchEnd) {
-        slots.push({
-          start: formatISO(slotStart),
-          end: formatISO(slotEnd)
-        });
+      if (!isBefore(slotStart, workEnd) || !isBefore(slotStart, periodEnd)) {
+        const nextDay = new Date(currentDay);
+        nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+        current = nextDay;
+        continue;
       }
       
-      slotStart = slotEnd;
+      const slotEnd = addMinutes(slotStart, durationMinutes);
+      
+      if ((isInWorkHours(slotStart) && isInWorkHours(new Date(slotEnd.getTime() - 1))) &&
+          (isBefore(slotEnd, periodEnd) || isEqual(slotEnd, periodEnd)) &&
+          (isBefore(slotEnd, workEnd) || isEqual(slotEnd, workEnd))) {
+        slots.push({
+          start: slotStart.toISOString(),
+          end: slotEnd.toISOString()
+        });
+        current = slotEnd;
+      } else {
+        const nextDay = new Date(currentDay);
+        nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+        current = nextDay;
+      }
     }
   }
   
   return slots;
 };
 export default findAvailableSlots;
+// Generation time: 14.710s
+// Result: PASS

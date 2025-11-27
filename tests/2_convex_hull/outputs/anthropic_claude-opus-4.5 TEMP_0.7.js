@@ -1,4 +1,4 @@
-const findConvexHull = async (points) => {
+async function findConvexHull(points) {
   const _ = (await import("https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/lodash.min.js")).default;
   
   const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
@@ -22,6 +22,11 @@ const findConvexHull = async (points) => {
     upper.push(p);
   }
   
-  return [...lower.slice(0, -1), ...upper.slice(0, -1)];
-};
+  lower.pop();
+  upper.pop();
+  
+  return [...lower, ...upper];
+}
 export default findConvexHull;
+// Generation time: 5.506s
+// Result: PASS

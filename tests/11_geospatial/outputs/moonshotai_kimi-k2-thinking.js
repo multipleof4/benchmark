@@ -1,11 +1,18 @@
-export async function analyzeGPS(readings, boundary) {
-  const { booleanPointInPolygon, lineString, length } = await import('https://cdn.skypack.dev/@turf/turf');
+async function analyzeGPS(readings, boundary) {
+  const isValid = r => r?.ts != null && Array.isArray(r?.loc) && r.loc.length === 2;
+  const valid = readings?.filter(isValid) || [];
+  if (valid.length < 2) return 0;
   
-  const pts = readings
-    .filter(r => booleanPointInPolygon(r.loc, boundary))
+  const turf = await import('https://cdn.skypack.dev/@turf/turf').catch(() => null);
+  if (!turf) return 0;
+  
+  const points = valid
+    .filter(r => turf.booleanPointInPolygon(r.loc, boundary))
     .sort((a, b) => a.ts - b.ts)
     .map(r => r.loc);
   
-  return pts.length < 2 ? 0 : +length(lineString(pts)).toFixed(2);
+  return points.length < 2 ? 0 : Math.round(turf.length(turf.lineString(points), {units: 'kilometers'}) * 100) / 100;
 }
 export default analyzeGPS;
+// Generation time: 48.580s
+// Result: PASS

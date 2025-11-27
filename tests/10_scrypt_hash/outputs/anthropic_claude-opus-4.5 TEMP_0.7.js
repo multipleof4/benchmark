@@ -5,3 +5,5 @@ async function hashPassword(p, s) {
   return [...h].map(b => b.toString(16).padStart(2, '0')).join('')
 }
 export default hashPassword;
+// Generation time: 2.609s
+// Result: PASS

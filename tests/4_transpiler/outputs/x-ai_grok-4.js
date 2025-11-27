@@ -1,7 +1,8 @@
 async function renderTemplate(template, data) {
   const { default: Handlebars } = await import('https://esm.sh/handlebars');
-  return Handlebars.compile(template)(data);
+  const compiled = Handlebars.compile(template);
+  return compiled(data);
 }
 export default renderTemplate;
-// Generation time: 2.930s
+// Generation time: 22.419s
 // Result: PASS

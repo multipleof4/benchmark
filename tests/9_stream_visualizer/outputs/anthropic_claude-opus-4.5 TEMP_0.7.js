@@ -26,3 +26,5 @@ async function createStreamVisualizer(asyncIterable, options) {
   return { data, path };
 }
 export default createStreamVisualizer;
+// Generation time: 5.230s
+// Result: PASS

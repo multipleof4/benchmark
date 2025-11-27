@@ -1,2 +1,21 @@
-const validateJSON=(()=>{let a;return async(j,s)=>{a??=(async()=>{const{default:Ajv}=await import('https://esm.run/ajv@8');return new Ajv({allErrors:1});})();const v=await a,c=v.compile(s),valid=c(j);return{valid,errors:valid?[]:(c.errors||[]).map(e=>`${e.instancePath||'/'} ${e.message}`)}}})();
+const loadAjv = (() => {
+  let ajv
+  return async () => {
+    if (!ajv) {
+      const { default: Ajv } = await import('https://cdn.jsdelivr.net/npm/ajv@8.12.0/dist/ajv.js')
+      ajv = new Ajv({ allErrors: true, strict: false })
+    }
+    return ajv
+  }
+})()
+
+export const validateJSON = async (data, schema) => {
+  const ajv = await loadAjv()
+  const validate = ajv.compile(schema)
+  const valid = validate(data)
+  const errors = valid ? [] : validate.errors.map(e => `${e.instancePath || '/'} ${e.message}`)
+  return { valid, errors }
+}
 export default validateJSON;
+// Generation time: 6.678s
+// Result: FAIL

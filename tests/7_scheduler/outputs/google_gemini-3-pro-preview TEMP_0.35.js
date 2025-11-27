@@ -1,52 +1,65 @@
-const findAvailableSlots = async (cal1, cal2, { durationMinutes: dur, searchRange: range, workHours: work }) => {
-    const { parseISO } = await import('https://cdn.jsdelivr.net/npm/date-fns@3.6.0/+esm');
+const findAvailableSlots = async (calA, calB, { durationMinutes, searchRange, workHours }) => {
+  const { addMinutes, parseISO, formatISO } = await import('https://esm.sh/date-fns@2.30.0');
+
+  const getMins = (t) => { const [h, m] = t.split(':'); return (+h * 60) + +m; };
+  const [workStart, workEnd] = [workHours.start, workHours.end].map(getMins);
+  const rangeEnd = parseISO(searchRange.end).getTime();
+  
+  const busy = [...calA, ...calB]
+    .map(s => ({ s: parseISO(s.start).getTime(), e: parseISO(s.end).getTime() }))
+    .sort((a, b) => a.s - b.s)
+    .reduce((acc, c) => {
+      const last = acc[acc.length - 1];
+      if (last && c.s <= last.e) last.e = Math.max(last.e, c.e);
+      else acc.push(c);
+      return acc;
+    }, []);
+
+  let current = parseISO(searchRange.start).getTime();
+  const slots = [];
+
+  while (current + durationMinutes * 60000 <= rangeEnd) {
+    const d = new Date(current);
+    const curMins = d.getUTCHours() * 60 + d.getUTCMinutes();
+
+    if (curMins >= workEnd) {
+      d.setUTCDate(d.getUTCDate() + 1);
+      d.setUTCHours(0, 0, 0, 0);
+      current = addMinutes(d, workStart).getTime();
+      continue;
+    }
+
+    if (curMins < workStart) {
+      d.setUTCHours(0, 0, 0, 0);
+      current = addMinutes(d, workStart).getTime();
+      continue;
+    }
+
+    const end = addMinutes(current, durationMinutes).getTime();
+    const endD = new Date(end);
+    const endMins = endD.getUTCHours() * 60 + endD.getUTCMinutes();
+
+    if (end > rangeEnd) break;
+
+    if (endD.getUTCDate() !== d.getUTCDate() || endMins > workEnd) {
+      d.setUTCDate(d.getUTCDate() + 1);
+      d.setUTCHours(0, 0, 0, 0);
+      current = addMinutes(d, workStart).getTime();
+      continue;
+    }
+
+    const conflict = busy.find(b => current < b.e && end > b.s);
     
-    const toMs = (d) => parseISO(d).getTime();
-    const [wsH, wsM] = work.start.split(':').map(Number);
-    const [weH, weM] = work.end.split(':').map(Number);
-    const rangeStart = toMs(range.start);
-    const rangeEnd = toMs(range.end);
-    const durMs = dur * 60000;
-
-    const busy = [...cal1, ...cal2]
-        .map(x => ({ s: toMs(x.start), e: toMs(x.end) }))
-        .sort((a, b) => a.s - b.s);
-
-    const merged = [];
-    for (const b of busy) {
-        const last = merged[merged.length - 1];
-        if (last && b.s < last.e) last.e = Math.max(last.e, b.e);
-        else merged.push(b);
+    if (conflict) {
+      current = conflict.e;
+    } else {
+      slots.push({ start: formatISO(current), end: formatISO(end) });
+      current = end;
     }
+  }
 
-    const slots = [];
-    let currDate = parseISO(range.start);
-    currDate.setUTCHours(0, 0, 0, 0);
-
-    while (currDate.getTime() < rangeEnd) {
-        const wStart = new Date(currDate).setUTCHours(wsH, wsM, 0, 0);
-        const wEnd = new Date(currDate).setUTCHours(weH, weM, 0, 0);
-        
-        let t = Math.max(wStart, rangeStart);
-        const limit = Math.min(wEnd, rangeEnd);
-
-        while (t + durMs <= limit) {
-            const tEnd = t + durMs;
-            const clash = merged.find(b => t < b.e && tEnd > b.s);
-            
-            if (clash) {
-                t = clash.e;
-            } else {
-                slots.push({ 
-                    start: new Date(t).toISOString(), 
-                    end: new Date(tEnd).toISOString() 
-                });
-                t += durMs;
-            }
-        }
-        currDate.setUTCDate(currDate.getUTCDate() + 1);
-    }
-
-    return slots;
+  return slots;
 };
 export default findAvailableSlots;
+// Generation time: 47.831s
+// Result: PASS

@@ -1,28 +1,27 @@
-export async function findShortestPath(graph, start, end) {
-  const { default: PriorityQueue } = await import('https://cdn.jsdelivr.net/npm/js-priority-queue@0.1.5/index.min.js');
-  
-  if (!graph[start] || !graph[end]) return Infinity;
-  if (start === end) return 0;
-  
-  const dist = { [start]: 0 };
-  const pq = new PriorityQueue({ comparator: (a, b) => a[0] - b[0] });
-  pq.queue([0, start]);
-  
-  while (pq.length) {
-    const [d, node] = pq.dequeue();
-    
-    if (node === end) return d;
-    if (d > (dist[node] ?? Infinity)) continue;
-    
-    for (const [n, w] of Object.entries(graph[node] || {})) {
-      const nd = d + w;
-      if (nd < (dist[n] ?? Infinity)) {
-        dist[n] = nd;
-        pq.queue([nd, n]);
+let PQ;
+export async function findShortestPath(g, s, e) {
+  if (!(s in g) || !(e in g)) return Infinity;
+  if (!PQ) ({ default: PQ } = await import('https://cdn.skypack.dev/js-priority-queue@0.1.5'));
+  const d = new Map([[s, 0]]);
+  const q = new PQ({ comparator: (a, b) => a[1] - b[1] });
+  const v = new Set();
+  q.queue([s, 0]);
+  while (q.length) {
+    const [n, c] = q.dequeue();
+    if (n === e) return c;
+    if (v.has(n)) continue;
+    v.add(n);
+    if (c > (d.get(n) ?? Infinity)) continue;
+    for (const [p, w] of Object.entries(g[n] || {})) {
+      const t = c + w;
+      if (t < (d.get(p) ?? Infinity)) {
+        d.set(p, t);
+        q.queue([p, t]);
       }
     }
   }
-  
-  return Infinity;
+  return d.get(e) ?? Infinity;
 }
 export default findShortestPath;
+// Generation time: 95.484s
+// Result: PASS

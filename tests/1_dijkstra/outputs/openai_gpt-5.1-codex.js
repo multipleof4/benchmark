@@ -1,30 +1,24 @@
-let pqPromise
-const getPQ=()=>pqPromise??=import('https://cdn.jsdelivr.net/npm/js-priority-queue@latest/+esm')
-
-async function findShortestPath(g,s,t){
-if(!g||!(s in g)||!(t in g)) return Infinity
-if(s===t) return 0
-const {default:PriorityQueue}=await getPQ()
-const d={[s]:0}
-const seen=new Set
-const q=new PriorityQueue({comparator:(a,b)=>a[0]-b[0]})
-q.queue([0,s])
-while(q.length){
-const [w,n]=q.dequeue()
-if(seen.has(n)) continue
-seen.add(n)
-if(n===t) return w
-const edges=g[n]
-if(!edges) continue
-for(const k in edges){
-if(seen.has(k)) continue
-const nw=w+edges[k]
-if(nw<(d[k]??Infinity)){
-d[k]=nw
-q.queue([nw,k])
-}
-}
-}
-return Infinity
+export const findShortestPath=async(g,s,e)=>{
+ const{default:Q}=await import('https://esm.sh/js-priority-queue')
+ const d={},v=new Set(),q=new Q({comparator:(a,b)=>a[1]-b[1]})
+ for(const k in g)d[k]=Infinity
+ d[s]=0
+ q.queue([s,0])
+ while(q.length){
+  const[n,w]=q.dequeue()
+  if(v.has(n))continue
+  if(n===e)return w
+  v.add(n)
+  for(const[nb,c]of Object.entries(g[n]||{})){
+   const nw=w+c
+   if(nw<d[nb]){
+    d[nb]=nw
+    q.queue([nb,nw])
+   }
+  }
+ }
+ return Infinity
 }
 export default findShortestPath;
+// Generation time: 9.436s
+// Result: PASS

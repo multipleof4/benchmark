@@ -1,21 +1,16 @@
-const libCache={},load=u=>libCache[u]??=import(u);
+const store={},load=u=>store[u]??=import(u),csvLib='https://cdn.jsdelivr.net/npm/papaparse@5.4.1/+esm',dataLib='https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/+esm',toNum=v=>{const n=Number(v);return Number.isFinite(n)?n:0};
 
-async function processCSV(csv,cfg){
-  const [{csvParse},{groupBy}]=await Promise.all([
-    load('https://cdn.jsdelivr.net/npm/d3-dsv@3.0.1/+esm'),
-    load('https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/+esm')
-  ]);
-  const {filterColumn:f,filterValue:v,groupBy:k,aggregateColumn:a,operation:o}=cfg;
-  const rows=csvParse(csv).filter(r=>r[f]==v);
-  const grouped=groupBy(rows,r=>r[k]);
-  return Object.entries(grouped).map(([g,list])=>{
-    const nums=list.map(r=>{
-      const n=+r[a];
-      return Number.isFinite(n)?n:0;
-    });
-    const sum=nums.reduce((s,n)=>s+n,0);
-    const result=o==='count'?list.length:o==='sum'?sum:list.length?sum/list.length:0;
-    return {[k]:g,result};
+async function processCSV(csv,opt){
+  const [{Papa},{groupBy:gb}] = await Promise.all([load(csvLib),load(dataLib)]);
+  const {filterColumn:f,filterValue:v,groupBy:g,aggregateColumn:a,operation:o}=opt;
+  const rows=Papa.parse(csv,{header:true,skipEmptyLines:true}).data.filter(r=>r&&r[f]==v);
+  const grouped=gb(rows,r=>r[g]);
+  return Object.entries(grouped).map(([k,items])=>{
+    const total=items.reduce((s,r)=>s+toNum(r[a]),0);
+    const result=o==='count'?items.length:o==='sum'?total:items.length?total/items.length:0;
+    return {[g]:k,result};
   });
 }
 export default processCSV;
+// Generation time: 29.916s
+// Result: FAIL

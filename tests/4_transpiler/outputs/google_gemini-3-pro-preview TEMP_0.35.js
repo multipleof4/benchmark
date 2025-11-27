@@ -1,5 +1,6 @@
-const renderTemplate = async (tmpl, data) => {
-  const { default: H } = await import('https://cdn.jsdelivr.net/npm/handlebars@latest/+esm')
-  return H.compile(tmpl)(data)
-}
+const renderTemplate = async (t, d) =>
+  (await import('https://esm.sh/handlebars'))
+    .default.compile(t)(d)
 export default renderTemplate;
+// Generation time: 29.656s
+// Result: PASS

@@ -1,19 +1,16 @@
-export const processCSV = async (csvString, { filterColumn, filterValue, groupBy, aggregateColumn, operation }) => {
-  const [{ csvParse }, { rollup, sum, mean }] = await Promise.all([
-    import('https://esm.sh/d3-dsv'),
-    import('https://esm.sh/d3-array')
-  ]);
-
-  const getValue = d => +(d[aggregateColumn]) || 0;
-  
-  const grouped = rollup(
-    csvParse(csvString).filter(row => row[filterColumn] == filterValue),
-    group => operation === 'count' 
-      ? group.length 
-      : (operation === 'sum' ? sum : mean)(group, getValue),
-    row => row[groupBy]
-  );
-
-  return Array.from(grouped, ([key, result]) => ({ [groupBy]: key, result }));
+const processCSV = async (str, { filterColumn: fc, filterValue: fv, groupBy: gb, aggregateColumn: ac, operation: op }) => {
+  const { csvParse, rollups, sum } = await import('https://esm.sh/d3@7');
+  const num = v => +v || 0;
+  return rollups(
+    csvParse(str).filter(d => d[fc] == fv),
+    g => {
+      if (op === 'count') return g.length;
+      const t = sum(g, d => num(d[ac]));
+      return op === 'sum' ? t : t / g.length;
+    },
+    d => d[gb]
+  ).map(([k, v]) => ({ [gb]: k, result: v }));
 };
 export default processCSV;
+// Generation time: 40.784s
+// Result: PASS

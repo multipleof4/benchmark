@@ -1,14 +1,10 @@
-export async function findLISLength(nums) {
-  if (!Array.isArray(nums) || nums.length === 0) return 0;
-  
-  const { bisectLeft } = await import('https://cdn.jsdelivr.net/npm/d3-array@3/+esm');
-  const tails = [];
-  
-  for (const num of nums) {
-    const idx = bisectLeft(tails, num);
-    idx === tails.length ? tails.push(num) : tails[idx] = num;
-  }
-  
-  return tails.length;
+export async function findLISLength(a){
+const{bisectLeft}=await import('https://esm.sh/d3-array');
+if(!Array.isArray(a))return 0;
+const t=[];
+for(const v of a){const i=bisectLeft(t,v);i===t.length?t.push(v):t[i]=v;}
+return t.length;
 }
 export default findLISLength;
+// Generation time: 39.477s
+// Result: PASS
