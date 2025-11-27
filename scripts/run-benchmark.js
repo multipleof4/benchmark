@@ -3,6 +3,7 @@ import path from 'path';
 import { pathToFileURL } from 'url';
 import axios from 'axios';
 import { performance } from 'perf_hooks';
+import { chromium } from 'playwright';
 
 const CWD = process.cwd();
 const [README, TESTS] = ['README', 'tests'].map(f => path.join(CWD, f));
@@ -34,6 +35,20 @@ const getLlmCode = async (prompt, model, funcName, temp) => {
     const clean = code.replace(/export\s+default\s+.*$/m, '');
     return { code: `${clean}\nexport default ${funcName};\n// Generation time: ${duration.toFixed(3)}s`, duration };
   } catch (e) { console.error(`API Error ${model}: ${e.message}`); return null; }
+};
+
+const verify = async (page, code, testCode) => {
+  try {
+    await page.evaluate(async ({ c, t }) => {
+      const b = s => URL.createObjectURL(new Blob([s], {type:'text/javascript'}));
+      const [uC, uT] = [b(c), b(t)];
+      try {
+        const [mC, mT] = await Promise.all([import(uC), import(uT)]);
+        await mT.default.runTest(mC.default);
+      } finally { URL.revokeObjectURL(uC); URL.revokeObjectURL(uT); }
+    }, { c: code, t: testCode });
+    return 'PASS';
+  } catch (e) { return 'FAIL'; }
 };
 
 const main = async () => {
@@ -69,22 +84,32 @@ const main = async () => {
   const clean = dir => fs.rm(path.join(TESTS, dir, OUT_DIR_NAME, sModel ? `${sModel.replace(/[\/:]/g, '_')}.js` : ''), { recursive: !sModel, force: true });
   await Promise.all(targetTests.map(clean));
 
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+
   for (const mSpec of models) {
     const [model, tStr] = mSpec.split(' TEMP:');
     const temp = tStr ? parseFloat(tStr) : undefined;
     
     for (const dir of targetTests) {
-      const { prompt, functionName } = (await import(pathToFileURL(path.join(TESTS, dir, 'test.js')))).default;
+      const testPath = path.join(TESTS, dir, 'test.js');
+      const { prompt, functionName } = (await import(pathToFileURL(testPath))).default;
+      const testCode = await fs.readFile(testPath, 'utf-8');
+
       console.log(`Gen ${dir} for ${mSpec} in ${OUT_DIR_NAME}...`);
       const res = await getLlmCode(`${shared}\n\n${prompt.trim()}`, model, functionName, temp);
       
       if (!res) continue;
 
+      const result = await verify(page, res.code, testCode);
+      console.log(`  -> ${result}`);
+
       const outDir = path.join(TESTS, dir, OUT_DIR_NAME);
       await fs.mkdir(outDir, { recursive: true });
-      await fs.writeFile(path.join(outDir, `${mSpec.replace(/[\/:]/g, '_')}.js`), res.code);
+      await fs.writeFile(path.join(outDir, `${mSpec.replace(/[\/:]/g, '_')}.js`), `${res.code}\n// Result: ${result}`);
     }
   }
+  await browser.close();
   console.log('Done.');
 };
 
