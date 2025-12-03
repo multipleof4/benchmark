@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Why CDN Imports Matter in LLM Benchmarks - Lynchmark Analysis</title>
+  
+  <meta name="description" content="Most LLM benchmarks test code in isolation. Lynchmark tests real-world skills: finding correct CDN URLs and making code work in actual browsers.">
+  <meta property="og:title" content="Why CDN Imports Matter in LLM Benchmarks">
+  <meta property="og:description" content="Discover why testing LLMs with real CDN imports and browser execution reveals crucial practical skills that isolated benchmarks miss.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://lynchmark.com/blog/why-cdn-imports-matter">
+  <meta property="og:site_name" content="Lynchmark">
+  <link rel="canonical" href="https://lynchmark.com/blog/why-cdn-imports-matter.html">
+  
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Why CDN Imports Matter in LLM Benchmarks",
+    "datePublished": "2024-06-15",
+    "author": {"@type": "Organization", "name": "Lynchmark"},
+    "description": "Testing LLMs with real CDN imports reveals practical skills that isolated benchmarks miss entirely."
+  }
+  </script>
+
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @font-face{font-family:"Stain";src:url("https://cdn.jsdelivr.net/gh/multipleof4/stain.otf@master/dist/Stain.otf") format("opentype");font-weight:normal;font-style:normal}
+    body{font-family:"Stain",sans-serif}
+    .mono{font-family:"IBM Plex Mono",monospace}
+    code{font-family:"IBM Plex Mono",monospace;background:#f3f4f6;padding:2px 4px;border-radius:4px;font-size:0.9em}
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <main class="max-w-3xl mx-auto flex flex-col min-h-screen p-6 lg:p-8">
+    <nav class="mb-12 flex items-center gap-4 text-sm">
+      <a href="/" class="text-gray-500 hover:text-blue-600 transition">Lynchmark</a>
+      <span class="text-gray-300">/</span>
+      <a href="/blog" class="text-gray-500 hover:text-blue-600 transition">Blog</a>
+      <span class="text-gray-300">/</span>
+      <span class="font-medium text-gray-900">CDN Imports</span>
+    </nav>
+
+    <article class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <header class="bg-gray-50 px-8 py-10 border-b border-gray-200">
+        <div class="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 text-orange-700 text-xs font-bold px-3 py-1 mb-4 uppercase tracking-wide">Technical Insight</div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Why CDN Imports Matter in LLM Benchmarks</h1>
+        <p class="text-lg text-gray-600">
+          Most benchmarks test code in isolation. Lynchmark tests what actually matters: finding correct CDN URLs and making code work in real browsers.
+        </p>
+      </header>
+
+      <div class="p-8 lg:p-10 space-y-8">
+        <section>
+          <h2 class="text-xl font-bold text-gray-900 mb-3">The Hidden Skill Gap</h2>
+          <p class="text-gray-600 leading-relaxed mb-4">
+            When you ask an LLM to "write a function that uses lodash," most benchmarks will accept any code that <em>looks</em> like it uses lodash. But in the real world, that code needs to:
+          </p>
+          <ul class="text-gray-600 leading-relaxed space-y-2 mb-6 pl-5 list-disc">
+            <li>Find the correct CDN URL for the library</li>
+            <li>Use the proper import syntax for that CDN</li>
+            <li>Handle the library's actual API (not just what the LLM thinks it should be)</li>
+            <li>Execute successfully in a browser environment</li>
+          </ul>
+          <p class="text-gray-600 leading-relaxed">
+            This is where many LLMs fail spectacularly. They might generate perfect-looking algorithm code, but use non-existent CDN URLs or incorrect import patterns.
+          </p>
+        </section>
+
+        <section>
+          <h2 class="text-xl font-bold text-gray-900 mb-3">Real-World Example: The scrypt-js Test</h2>
+          <div class="bg-gray-50 rounded-xl p-6 border border-gray-200 mb-4">
+            <p class="text-gray-600 mb-4">
+              In Test #10, models must import <code>scrypt-js</code> from a CDN. Here's what separates passing from failing implementations:
+            </p>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <h4 class="font-bold text-red-700 mb-2">❌ Common Failure</h4>
+                <pre class="mono text-xs text-red-800 bg-red-100 p-3 rounded overflow-x-auto">import { scrypt } from 'https://cdn.skypack.dev/scrypt-js';
+// Wrong: Skypack doesn't export named 'scrypt' this way</pre>
+              </div>
+              <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 class="font-bold text-green-700 mb-2">✅ Correct Solution</h4>
+                <pre class="mono text-xs text-green-800 bg-green-100 p-3 rounded overflow-x-auto">const { scrypt } = await import('https://cdn.jsdelivr.net/npm/scrypt-js@3.0.1/+esm');
+// Correct: Uses jsDelivr with proper destructuring</pre>
+              </div>
+            </div>
+          </div>
+          <p class="text-gray-600 leading-relaxed">
+            The difference isn't just syntax—it's about knowing which CDNs work for which libraries, and how those libraries are actually packaged for browser use.
+          </p>
+        </section>
+
+        <section class="grid md:grid-cols-2 gap-8">
+          <div>
+            <h3 class="font-bold text-gray-900 mb-2">What Traditional Benchmarks Miss</h3>
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Standard coding benchmarks test algorithmic thinking in isolation. They don't verify that the generated code can actually <em>run</em> in a real environment with real dependencies.
+            </p>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900 mb-2">What Lynchmark Captures</h3>
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Practical deployment knowledge: Which CDN hosts which libraries, how to import them correctly, and whether the resulting code executes successfully in a browser with no build step.
+            </p>
+          </div>
+        </section>
+
+        <section class="border-t border-gray-200 pt-8">
+          <h2 class="text-xl font-bold text-gray-900 mb-4">The Takeaway</h2>
+          <div class="bg-blue-50 border-l-4 border-blue-500 p-4">
+            <p class="text-blue-900 font-medium">
+              When evaluating LLMs for real-world coding tasks, test their ability to work with actual dependencies in real environments. Perfect algorithm implementation means nothing if the code can't import its required libraries.
+            </p>
+          </div>
+          <p class="text-gray-600 mt-4">
+            This is why Lynchmark runs every generated solution in a real browser with real CDN imports—it's the only way to know if the code actually works.
+          </p>
+        </section>
+      </div>
+    </article>
+    <footer class="mt-12 text-center text-xs text-gray-500 mono">
+      Public Domain
+    </footer>
+  </main>
+</body>
+</html>
