@@ -1,264 +1,76 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lynchmark Newsletter - Issue 1</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       line-height: 1.6;
-      color: #111;
-      background: #f5f5f5;
+      color: #ccc;
+      background: #111;
       padding: 20px;
     }
     .email {
       max-width: 600px;
       margin: 0 auto;
-      background: white;
-      border-radius: 4px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-    .header {
       background: #000;
-      color: white;
-      padding: 28px 20px;
-      text-align: center;
+      border: 1px solid #333;
+      padding: 40px 24px;
     }
-    .header h1 {
+    h1 {
       font-size: 24px;
       font-weight: 700;
-      margin-bottom: 4px;
-      letter-spacing: -0.5px;
-    }
-    .header p {
-      opacity: 0.7;
-      font-size: 13px;
-    }
-    .content {
-      padding: 28px 24px;
-    }
-    .score-card {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: #f8f8f8;
-      border-radius: 6px;
-      padding: 18px;
       margin-bottom: 20px;
-      border: 1px solid #ddd;
-    }
-    .model {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .model-icon {
-      width: 36px;
-      height: 36px;
-      background: #000;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: bold;
-      font-size: 13px;
-    }
-    .model-name {
-      font-weight: 600;
-      font-size: 15px;
-    }
-    .grade {
-      font-size: 18px;
-      font-weight: 800;
-      font-family: monospace;
-    }
-    .grade.c { color: #d97706; }
-    .grade.d { color: #dc2626; }
-    .vs {
-      text-align: center;
-      margin: 18px 0;
-      font-size: 13px;
-      color: #666;
-      position: relative;
-    }
-    .vs::before, .vs::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      width: 40%;
-      height: 1px;
-      background: #ccc;
-    }
-    .vs::before { left: 0; }
-    .vs::after { right: 0; }
-    .visual {
-      background: #f9f9f9;
-      border-radius: 6px;
-      padding: 18px;
-      margin: 20px 0;
-      border: 1px solid #e5e5e5;
-    }
-    .bars {
-      display: flex;
-      align-items: flex-end;
-      gap: 6px;
-      height: 100px;
-      margin-top: 14px;
-    }
-    .bar {
-      flex: 1;
-      background: #000;
-      border-radius: 2px 2px 0 0;
-      position: relative;
-    }
-    .bar-label {
-      position: absolute;
-      bottom: -22px;
-      left: 0;
-      right: 0;
-      text-align: center;
-      font-size: 11px;
-      color: #555;
-      font-weight: 500;
-    }
-    .insight {
-      background: #fff8dc;
-      border-left: 3px solid #d4b106;
-      padding: 14px;
-      margin: 20px 0;
-      border-radius: 0 4px 4px 0;
-    }
-    .insight h3 {
-      color: #8b7500;
-      margin-bottom: 6px;
-      font-size: 15px;
-    }
-    .ranking {
-      margin: 24px 0;
-    }
-    .rank-item {
-      display: flex;
-      align-items: center;
-      padding: 10px 14px;
-      background: #f8f8f8;
-      margin-bottom: 6px;
-      border-radius: 4px;
-      border: 1px solid #e0e0e0;
-    }
-    .rank {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      background: #f0f0f0;
-      color: #333;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 13px;
-      margin-right: 10px;
-    }
-    .rank-1 .rank { background: #ffd700; color: #000; }
-    .rank-2 .rank { background: #c0c0c0; color: #000; }
-    .rank-3 .rank { background: #cd7f32; color: #000; }
-    .footer {
-      text-align: center;
-      padding: 20px;
-      background: #f9f9f9;
-      border-top: 1px solid #e5e5e5;
-      color: #666;
-      font-size: 12px;
-    }
-    .footer a {
-      color: #000;
-      text-decoration: none;
-      font-weight: 500;
-    }
-    .footer a:hover { text-decoration: underline; }
-    h2 {
-      font-size: 18px;
-      margin-bottom: 14px;
-      color: #000;
+      color: #fff;
     }
     p {
-      margin-bottom: 14px;
-      color: #222;
-      font-size: 14px;
+      margin-bottom: 16px;
+      font-size: 15px;
     }
     .highlight {
-      background: #fffacd;
-      padding: 1px 3px;
+      background: #222;
+      padding: 2px 4px;
       border-radius: 2px;
       font-weight: 600;
     }
-    .callout {
-      background: #fff0f0;
-      border: 1px solid #ffb6c1;
-      color: #8b0000;
-      padding: 10px 14px;
-      border-radius: 4px;
-      margin: 16px 0;
-      font-size: 13px;
-    }
     .signature {
-      margin-top: 20px;
+      margin-top: 30px;
       font-style: italic;
-      color: #444;
+      color: #999;
     }
+    .footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #333;
+      font-size: 12px;
+      color: #666;
+    }
+    .footer a {
+      color: #ccc;
+      text-decoration: none;
+    }
+    .footer a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
   <div class="email">
-    <div class="header">
-      <h1>Lynchmark Newsletter</h1>
-    </div>
+    <h1>Lynchmark Newsletter</h1>
     
-    <div class="content">
-      <p>gpt‑5.1‑codex‑max just got added to API after having been added to Codex 2 weeks ago.</p>
-      
-      <div class="score-card">
-        <div class="model">
-          <div class="model-icon">M</div>
-          <div>
-            <div class="model-name">GPT‑5.1‑Codex‑Max</div>
-            <div style="font-size: 12px; color: #666;">Just released to API</div>
-          </div>
-        </div>
-        <div class="grade c">8/11 C‑</div>
-      </div>
-      
-      <div class="vs">versus</div>
-      
-      <div class="score-card">
-        <div class="model">
-          <div class="model-icon">C</div>
-          <div>
-            <div class="model-name">GPT‑5.1‑Codex</div>
-            <div style="font-size: 12px; color: #666;">Previous version</div>
-          </div>
-        </div>
-        <div class="grade d">7/11 D</div>
-      </div>
-      
-      <div class="insight">
-        <h3>The Takeaway</h3>
-        <p>Max scores <span class="highlight">one point better</span> than regular Codex. That's something. But it's still <span class="highlight">worse than Gemini 3 Pro</span>, Claude Opus 4.5, and DeepSeek v3.2. It's only on par with Claude Sonnet 4.5.</p>
-      </div>
-      
-      <div class="callout">
-        <strong>The reality check:</strong> Even with this release, OpenAI is still far behind. This shows exactly why they declared "code red." The gap is real. They're not closing it fast enough.
-      </div>
-      
-      <p><strong>What's coming:</strong> The rumors say OpenAI's upcoming model (codenamed "Garlic") arrives next week. The pressure is on. The anticipation is building. I'll benchmark it the moment it drops.</p>
-      
-      <p class="signature">— Lynchmark</p>
-    </div>
+    <p>gpt‑5.1‑codex‑max was just added to API after having been introduced in Codex only 2 weeks ago. I just benchmarked it and it scored better than gpt‑5.1‑codex.</p>
+    
+    <p>Codex alone scores <span class="highlight">7/11 D</span> but Max scores <span class="highlight">8/11 C‑</span>.</p>
+    
+    <p>Still worse than Gemini 3 Pro and Claude Opus 4.5 and DeepSeek v3.2 but on par with Claude Sonnet 4.5.</p>
+    
+    <p>This shows even with this release, how far behind OpenAI is and why they 'declared code red'. The rumors of the upcoming model by OpenAI codenamed Garlic next week is very anticipated now.</p>
+    
+    <p class="signature">— Lynchmark</p>
     
     <div class="footer">
-      <p>Lynchmark tests LLMs by requiring correct CDN imports and library-specific implementations in browser JavaScript.</p>
+      <p>Lynchmark tests LLMs by requiring correct CDN imports and library‑specific implementations in browser JavaScript.</p>
       <p><a href="https://lynchmark.com">View full benchmark results</a> | <a href="https://lynchmark.com/unsubscribe.html">Unsubscribe</a></p>
     </div>
   </div>
