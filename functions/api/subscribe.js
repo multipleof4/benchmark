@@ -10,7 +10,7 @@ export async function onRequestPost({ request, env }) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${env.RESEND_KEY}`
+      'Authorization': `Bearer ${env.RESEND_TOKEN}`
     },
     body: JSON.stringify({ email })
   });
