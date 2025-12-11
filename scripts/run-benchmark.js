@@ -11,7 +11,7 @@ const getArg = n => { const i = process.argv.indexOf(n); return i > -1 ? process
 const isGemini = process.argv.includes('--gemini');
 const OUT_DIR_NAME = isGemini ? 'outputs_gemini' : 'outputs';
 
-const apiCall = async (prompt, model, temp) => {
+const apiCall = async (prompt, model, temp, effort) => {
   if (isGemini) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GOOGLE_KEY}`;
     const body = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: temp } };
@@ -20,16 +20,21 @@ const apiCall = async (prompt, model, temp) => {
   }
   const res = await axios.post(
     'https://openrouter.ai/api/v1/chat/completions',
-    { model, messages: [{ role: 'user', content: prompt }], ...(temp !== undefined && { temperature: temp }) },
+    { 
+      model, 
+      messages: [{ role: 'user', content: prompt }], 
+      ...(temp !== undefined && { temperature: temp }),
+      ...(effort && { reasoning: { effort } })
+    },
     { headers: { Authorization: `Bearer ${process.env.OPENROUTER_KEY}` } }
   );
   return res.data.choices[0].message.content;
 };
 
-const getLlmCode = async (prompt, model, funcName, temp) => {
+const getLlmCode = async (prompt, model, funcName, temp, effort) => {
   const start = performance.now();
   try {
-    const content = await apiCall(prompt, model, temp);
+    const content = await apiCall(prompt, model, temp, effort);
     const duration = (performance.now() - start) / 1000;
     const code = content.match(/```(?:javascript|js)?\n([\s\S]+?)\n```/)?.[1].trim() ?? content.trim();
     const clean = code.replace(/export\s+default\s+.*$/m, '');
@@ -88,7 +93,10 @@ const main = async () => {
   const page = await browser.newPage();
 
   for (const mSpec of models) {
-    const [model, tStr] = mSpec.split(' TEMP:');
+    const parts = mSpec.split(/\s+/);
+    const model = parts[0];
+    const tStr = parts.find(p => p.startsWith('TEMP:'))?.split(':')[1];
+    const eStr = parts.find(p => p.startsWith('EFF:'))?.split(':')[1];
     const temp = tStr ? parseFloat(tStr) : undefined;
     
     for (const dir of targetTests) {
@@ -97,7 +105,7 @@ const main = async () => {
       const testCode = await fs.readFile(testPath, 'utf-8');
 
       console.log(`Gen ${dir} for ${mSpec} in ${OUT_DIR_NAME}...`);
-      const res = await getLlmCode(`${shared}\n\n${prompt.trim()}`, model, functionName, temp);
+      const res = await getLlmCode(`${shared}\n\n${prompt.trim()}`, model, functionName, temp, eStr);
       
       if (!res) continue;
 
