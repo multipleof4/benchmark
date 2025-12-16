@@ -17,7 +17,7 @@ export async function onRequestPost({ request, env }) {
     return new Response(`{"error":"Resend error: ${text}"}`, { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 
-  await fetch(`https://ntfy.sh/${env.NTFY_TOPIC}`, {
+  await fetch(env.NTFY_URL, {
     method: 'POST',
     headers: { Priority: '3', Title: `🔕 Unsubscribe` },
     body: email
