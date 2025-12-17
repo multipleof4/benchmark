@@ -28,6 +28,10 @@ const apiCall = async (prompt, model, temp, effort) => {
     },
     { headers: { Authorization: `Bearer ${process.env.OPENROUTER_KEY}` } }
   );
+  if (!res.data.choices || !res.data.choices[0]) {
+    console.error('API Response:', JSON.stringify(res.data, null, 2));
+    throw new Error('Invalid API response structure');
+  }
   return res.data.choices[0].message.content;
 };
 
