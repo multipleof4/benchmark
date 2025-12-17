@@ -1,0 +1,45 @@
+name: Run Single Model+Test Combo
+
+on:
+  workflow_dispatch:
+    inputs:
+      model_name:
+        description: 'Model to benchmark (must exist in README)'
+        required: true
+        type: string
+      test_number:
+        description: 'Test number to run (e.g. 4)'
+        required: true
+        type: string
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run benchmark for single model+test combo
+        run: npm start -- --model "${{ inputs.model_name }}" --test "${{ inputs.test_number }}"
+        env:
+          OPENROUTER_KEY: ${{ secrets.OPENROUTER_KEY }}
+          
+      - name: Commit and push if changed
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add README tests
+          git diff --staged --quiet || (git commit -m "Docs: Update benchmark for ${{ inputs.model_name }} test ${{ inputs.test_number }}" && git push)
