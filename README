@@ -6,7 +6,6 @@ SHARED_PROMPT: "Provide production-ready and maintainable JavaScript code. Apply
 <!-- CONFIG_END -->
 
 
-
 The following models are included in the benchmark run.
 
 <!-- MODELS_START -->
